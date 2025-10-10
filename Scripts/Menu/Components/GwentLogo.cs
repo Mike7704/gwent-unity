@@ -2,11 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-[RequireComponent(typeof(Image), typeof(AudioSource))]
+[RequireComponent(typeof(Image))]
 public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     private Image image;
-    private AudioSource audioSource;
     private Material material;
 
     [Header("Hover Settings")]
@@ -23,7 +22,6 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     void Awake()
     {
         image = GetComponent<Image>();
-        audioSource = GetComponent<AudioSource>();
 
         // Use a copy of the material so multiple buttons don't share it
         material = Instantiate(image.material);
@@ -43,7 +41,10 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerEnter(PointerEventData eventData)
     {
         hovering = true;
-        if (hoverSound) audioSource.PlayOneShot(hoverSound);
+        if (hoverSound && AudioManager.Instance != null)
+        {
+           AudioManager.Instance.PlaySFX(hoverSound);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -53,14 +54,10 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (clickSounds != null && clickSounds.Length > 0)
+        if (clickSounds != null && clickSounds.Length > 0 && AudioManager.Instance != null)
         {
-            // Stop any currently playing sound
-            if (audioSource.isPlaying) audioSource.Stop();
-
-            // Play a random voice line
             int randomIndex = Random.Range(0, clickSounds.Length);
-            audioSource.PlayOneShot(clickSounds[randomIndex]);
+            AudioManager.Instance.PlayVoice(clickSounds[randomIndex]);
         }
     }
 }

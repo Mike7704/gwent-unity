@@ -2,11 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-[RequireComponent(typeof(Image), typeof(AudioSource))]
+[RequireComponent(typeof(Image))]
 public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     private Image image;
-    private AudioSource audioSource;
     private Material material;
 
     [Header("Hover Settings")]
@@ -23,7 +22,6 @@ public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     void Awake()
     {
         image = GetComponent<Image>();
-        audioSource = GetComponent<AudioSource>();
 
         // Use a copy of the material so multiple buttons don't share it
         material = Instantiate(image.material);
@@ -43,7 +41,10 @@ public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void OnPointerEnter(PointerEventData eventData)
     {
         hovering = true;
-        if (hoverSound) audioSource.PlayOneShot(hoverSound);
+        if (hoverSound && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(hoverSound);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -53,6 +54,9 @@ public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (clickSound) audioSource.PlayOneShot(clickSound);
+        if (clickSound && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clickSound);
+        }
     }
 }
