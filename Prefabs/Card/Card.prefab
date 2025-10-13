@@ -937,6 +937,20 @@ MonoBehaviour:
   quoteText: {fileID: 1404550618599614952}
   strengthText: {fileID: 7910219506060920751}
   factionBack: {fileID: 79629405046049174}
+  cardData:
+    id: 0
+    faction: 
+    name: 
+    quote: 
+    strength: 0
+    range: 
+    type: 
+    ability: 
+    target: []
+    imagePath: 
+    videoPath: 
+    unlocked: 0
+    challengeRewardCard: 0
 --- !u!1 &8768904221294382273
 GameObject:
   m_ObjectHideFlags: 0

@@ -6,7 +6,9 @@ public static class SpriteCache
 {
     private static readonly Dictionary<string, Sprite> cache = new();
 
-    // Load a sprite from Resources with caching
+    /// <summary>
+    /// Load a sprite from Resources with caching.
+    /// </summary>
     public static Sprite Load(string path)
     {
         if (string.IsNullOrEmpty(path))
@@ -22,6 +24,8 @@ public static class SpriteCache
 
         // Otherwise, load from Resources and store it
         sprite = Resources.Load<Sprite>(path);
+
+        //Debug.Log($"Loading sprite: {path}");
 
         if (sprite == null)
             Debug.LogWarning($"Sprite not found: {path}");

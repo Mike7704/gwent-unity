@@ -18,12 +18,14 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
     public TextMeshProUGUI strengthText;
     public Image factionBack;
 
-    private CardData cardData;
+    public CardData cardData;
 
     private bool isSpecialCard = false; // True for Special and Leader cards
     private bool hasBanner = false;
 
-    // Setup card UI based on CardData
+    /// <summary>
+    /// Setup the card UI elements based on the provided CardData.
+    /// </summary>
     public void Setup(CardData data)
     {
         cardData = data;
@@ -50,7 +52,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
     // Set card background image
     private void SetBackground()
     {
-        Sprite art = SpriteCache.Load("Cards/" + cardData.imagePath);
+        Sprite art = SpriteCache.Load(cardData.imagePath);
         if (background != null && art != null)
         {
             background.sprite = art;
@@ -98,6 +100,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
             banner.enabled = false; // No banner for neutral/special/leader
             return;
         }
+
+        banner.enabled = true;
 
         switch (cardData.faction)
             {
@@ -186,6 +190,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        rangeIcon.enabled = true;
+
         switch (cardData.range)
         {
             case "melee": rangeIcon.sprite = SpriteCache.Load("Cards/components/card_row_close"); break;
@@ -207,6 +213,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
             abilityIcon.enabled = false; // No ability icon for special/leader cards
             return;
         }
+
+        abilityIcon.enabled = true;
 
         switch (cardData.ability)
         {
@@ -236,12 +244,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
 
         nameText.text = cardData.name;
 
-        if (hasBanner)
-        {
-            // Shift text right to avoid overlapping banner
-            RectTransform rect = nameText.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.22f, 0.155f);
-        }
+        // Shift text right to avoid overlapping banner
+        RectTransform rect = nameText.GetComponent<RectTransform>();
+        rect.anchorMin = (hasBanner ? new Vector2(0.22f, 0.155f) : new Vector2(0.05f, 0.155f));
     }
 
     // Set card quote text
@@ -251,12 +256,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
 
         quoteText.text = "\"" + cardData.quote + "\"";
 
-        if (hasBanner)
-        {
-            // Shift text right to avoid overlapping banner
-            RectTransform rect = quoteText.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.22f, 0.11f);
-        }
+        // Shift text right to avoid overlapping banner
+        RectTransform rect = quoteText.GetComponent<RectTransform>();
+        rect.anchorMin = (hasBanner ? new Vector2(0.22f, 0.11f) : new Vector2(0.05f, 0.11f));
     }
 
     // Set card strength text
