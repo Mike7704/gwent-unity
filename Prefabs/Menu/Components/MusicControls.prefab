@@ -1058,6 +1058,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 129d21fcb8bdac348912ca4df8a15155, type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 512
+      objectReference: {fileID: 0}
+    - target: {fileID: 668919572236748079, guid: 129d21fcb8bdac348912ca4df8a15155, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 1
       objectReference: {fileID: 0}
@@ -1087,7 +1091,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1117809141858931523, guid: 129d21fcb8bdac348912ca4df8a15155, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 200
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 1117809141858931523, guid: 129d21fcb8bdac348912ca4df8a15155, type: 3}
       propertyPath: m_SizeDelta.y

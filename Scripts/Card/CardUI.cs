@@ -299,8 +299,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log("Clicked card: " + cardData.name);
+        //Debug.Log("Clicked card: " + cardData.name);
         //Debug.Log("Card Data: " + JsonUtility.ToJson(cardData, true));
-        // DeckMenu.Instance.AddCardToDeck(cardData);
+        DeckMenu.Instance.OnCardClicked(this);
     }
+
 }

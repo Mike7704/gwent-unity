@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2757589072189147280}
   - component: {fileID: 668919572236748079}
   m_Layer: 0
-  m_Name: GwentText
+  m_Name: GwentTextSmall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: de912e1e14dd3ca47ab072239520e23e, type: 2}
-  m_sharedMaterial: {fileID: 5534334898078162551, guid: de912e1e14dd3ca47ab072239520e23e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 5faaefd7556b6b44fb8aa5a6d611e0e2, type: 2}
+  m_sharedMaterial: {fileID: 8105378395369655978, guid: 5faaefd7556b6b44fb8aa5a6d611e0e2, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

@@ -18,23 +18,19 @@ public class CardDatabase : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
-        LoadAllCards();
-
-        // Initialise CardPool after cards are loaded
-        if (CardPool.Instance != null)
-            CardPool.Instance.PreloadAllCards(allCards);
-        else
-            Debug.LogWarning("CardPool instance not found.");
     }
 
     /// <summary>
     /// Called at the start of the game to load all card data from JSON files in Resources/Decks.
     /// </summary>
-    void LoadAllCards()
+    public void LoadAllCards()
     {
         TextAsset[] jsonFiles = Resources.LoadAll<TextAsset>("Decks");
 
