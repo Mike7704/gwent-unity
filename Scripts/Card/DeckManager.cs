@@ -31,13 +31,19 @@ public class DeckManager : MonoBehaviour
     public void AddCard(CardData data)
     {
         if (!playerDeck.Contains(data))
+        {
             playerDeck.Add(data);
+            CardSorter.Sort(playerDeck);
+        }
     }
 
     public void RemoveCard(CardData data)
     {
         if (playerDeck.Contains(data))
+        {
             playerDeck.Remove(data);
+            CardSorter.Sort(playerDeck);
+        }
     }
 
     public bool ContainsCard(CardData data)

@@ -15,7 +15,6 @@ public class CardDatabase : MonoBehaviour
     public Dictionary<string, List<CardData>> factionCards = new Dictionary<string, List<CardData>>();
     public Dictionary<string, List<CardData>> factionLeaders = new Dictionary<string, List<CardData>>();
 
-
     void Awake()
     {
         if (Instance != null)
@@ -136,31 +135,9 @@ public class CardDatabase : MonoBehaviour
         }
         return null;
     }
-
-    /// <summary>
-    /// Sort cards within each faction by type, strength, and range.
-    /// </summary>
     private void SortFactionCards()
     {
-        string[] rangeOrder = { "melee", "agile", "ranged", "siege" };
-
-        foreach (var kvp in factionCards)
-        {
-            kvp.Value.Sort((a, b) =>
-            {
-                // Special cards last
-                if (a.type == "special" && b.type != "special") return 1;
-                if (b.type == "special" && a.type != "special") return -1;
-
-                // Strength descending
-                int strengthCompare = b.strength.CompareTo(a.strength);
-                if (strengthCompare != 0) return strengthCompare;
-
-                // Range order
-                int aRangeIndex = System.Array.IndexOf(rangeOrder, a.range);
-                int bRangeIndex = System.Array.IndexOf(rangeOrder, b.range);
-                return aRangeIndex.CompareTo(bRangeIndex);
-            });
-        }
+        foreach (var card in factionCards)
+            CardSorter.Sort(card.Value);
     }
 }

@@ -16,6 +16,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI quoteText;
     public TextMeshProUGUI strengthText;
+    public Image overlayImage;
     public Image factionBack;
 
     public CardData cardData;
@@ -46,6 +47,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
         SetQuoteText();
         SetStrengthText();
 
+        ShowCardSelectedOverlay(false);
         SetFactionBack();
     }
 
@@ -270,10 +272,26 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
         strengthText.color = (cardData.type == "hero" ? Color.white : Color.black);
     }
 
+    // Set overlay image when selected in deck
+    public void ShowCardSelectedOverlay(bool show)
+    {
+        if (overlayImage == null) return;
+
+        overlayImage.gameObject.SetActive(show);
+    }
+
     // Set card back based on faction
     private void SetFactionBack()
     {
         if (factionBack == null) return;
+        /*
+        if (cardData.unlocked)
+        {
+            factionBack.enabled = false;
+            return;
+        }
+        */
+        factionBack.enabled = false;
 
         switch (cardData.faction)
         {
@@ -293,8 +311,6 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
                 }
                 break;
         }
-
-        factionBack.enabled = false;
     }
 
     public void OnPointerClick(PointerEventData eventData)

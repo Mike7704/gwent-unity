@@ -62,6 +62,7 @@ public class DeckMenu : MonoBehaviour
             if (cardUI != null)
             {
                 cardUI.Setup(data);
+                cardUI.ShowCardSelectedOverlay(DeckManager.Instance.ContainsCard(data));
                 visibleCards.Add(cardUI);
             }
             else
@@ -86,6 +87,7 @@ public class DeckMenu : MonoBehaviour
             if (cardUI != null)
             {
                 cardUI.Setup(data);
+                cardUI.ShowCardSelectedOverlay(false);
                 visibleCards.Add(cardUI);
             }
         }
@@ -97,7 +99,7 @@ public class DeckMenu : MonoBehaviour
     /// </summary>
     public void OnCardClicked(CardUI cardUI)
     {
-        if (cardUI == null || cardUI.cardData == null) return;
+        if (cardUI == null || cardUI.cardData == null || DeckManager.Instance == null) return;
 
         var cardData = cardUI.cardData;
         var deckManager = DeckManager.Instance;
@@ -119,11 +121,13 @@ public class DeckMenu : MonoBehaviour
         // Add or remove card from deck
         if (deckManager.ContainsCard(cardData))
         {
+            cardUI.ShowCardSelectedOverlay(false);
             deckManager.RemoveCard(cardData);
             Debug.Log($"Removed {cardData.name} from player deck");
         }
         else
         {
+            cardUI.ShowCardSelectedOverlay(true);
             deckManager.AddCard(cardData);
             Debug.Log($"Added {cardData.name} to player deck");
         }
