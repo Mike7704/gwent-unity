@@ -84,7 +84,7 @@ public class GameManager : Singleton<GameManager>
 
     private void HandleSinglePlayer()
     {
-        //LoadScene("SinglePlayer");
+        LoadScene("SinglePlayerGame");
     }
 
     // --------------------------------------------------------

@@ -871,7 +871,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardManager
   cardPrefab: {fileID: 8460689964350094239, guid: 2afb7ca8d93e5ee4885b6eb932cb7138, type: 3}
-  defaultParent: {fileID: 0}
+  cardParent: {fileID: 0}
   activeCards: []
 --- !u!1 &1568989882
 GameObject:
@@ -1368,7 +1368,7 @@ Canvas:
   m_RenderMode: 0
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
-  m_PixelPerfect: 1
+  m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0

@@ -8,7 +8,7 @@ public class MainMenu : Singleton<MainMenu>
     // Called when Play button is clicked
     private void PlayGame()
     {
-        //GameManager.Instance.ChangeState(GameState.SinglePlayer);
+        GameManager.Instance.ChangeState(GameState.SinglePlayer);
     }
 
     // Called when Deck button is clicked

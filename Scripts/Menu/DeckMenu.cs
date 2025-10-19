@@ -70,6 +70,7 @@ public class DeckMenu : Singleton<DeckMenu>
         foreach (var data in cards)
         {
             CardUI cardUI = CardManager.Instance.CreateCard(data, ContentPanel);
+            cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(DeckManager.Instance.PlayerDeck.Contains(data));
             visibleCardsDict[data] = cardUI;
         }
@@ -96,6 +97,7 @@ public class DeckMenu : Singleton<DeckMenu>
         foreach (var data in playerDeck)
         {
             CardUI cardUI = CardManager.Instance.CreateCard(data, ContentPanel);
+            cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(false);
             visibleCardsDict[data] = cardUI;
         }
@@ -111,10 +113,9 @@ public class DeckMenu : Singleton<DeckMenu>
     // -------------------------
 
     /// <summary>
-    /// Called by CardUI when a card is clicked.
-    /// Adds or removes it from the player’s deck.
+    /// Adds or removes card from the player’s deck.
     /// </summary>
-    public void OnCardClicked(CardUI cardUI)
+    private void HandleCardInteraction(CardUI cardUI)
     {
         if (cardUI == null || cardUI.cardData == null)
             return;
@@ -162,7 +163,6 @@ public class DeckMenu : Singleton<DeckMenu>
     /// </summary>
     private void RefreshDeckView()
     {
-        Debug.Log("[DeckMenu] Refreshing deck view...");
         if (viewingDeck == "Player")
         {
             var deck = DeckManager.Instance.PlayerDeck;
@@ -221,8 +221,12 @@ public class DeckMenu : Singleton<DeckMenu>
     /// </summary>
     private void ClearScrollPane()
     {
-        foreach (var pair in visibleCardsDict)
-            CardManager.Instance.ReturnCard(pair.Value);
+        foreach (var card in visibleCardsDict)
+        {
+            var cardUI = card.Value;
+            cardUI.OnCardClicked -= HandleCardInteraction;
+            CardManager.Instance.ReturnCard(cardUI);
+        }
         visibleCardsDict.Clear();
     }
 

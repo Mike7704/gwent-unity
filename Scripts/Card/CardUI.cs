@@ -1,13 +1,14 @@
-using UnityEngine;
-using UnityEngine.UI;
+using System;
 using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// Handles visual representation of a single card in the UI.
 /// Uses CardData from the database and loads assets via ResourceSystem.
 /// </summary>
-public class CardUI : MonoBehaviour, IPointerClickHandler
+public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [Header("UI References")]
     public Image background;
@@ -27,6 +28,12 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
 
     private bool isSpecialCard = false; // True for Special and Leader cards
     private bool hasBanner = false;
+
+    // Events for managers to subscribe
+    public event System.Action<CardUI> OnCardClicked;
+    public event System.Action<CardUI> OnCardDragged;
+
+    private Vector3 originalPosition;
 
     /// <summary>
     /// Setup the card UI elements based on the provided CardData.
@@ -365,19 +372,40 @@ public class CardUI : MonoBehaviour, IPointerClickHandler
         }
     }
 
+    // -------------------------
+    // Interaction Handlers
+    // -------------------------
+
     public void OnPointerClick(PointerEventData eventData)
     {
         if (cardData == null) return;
 
-        // Forward click to DeckMenu
-        if (DeckMenu.Instance != null)
-        {
-            DeckMenu.Instance.OnCardClicked(this);
-        }
-        else
-        {
-            Debug.LogWarning("[CardUI] No DeckMenu instance found!");
-        }
+        OnCardClicked?.Invoke(this);
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        originalPosition = transform.position;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        // Smoothly move card with cursor
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+        transform.parent as RectTransform,
+        eventData.position,
+        eventData.pressEventCamera,
+        out Vector2 localPoint
+    );
+
+        transform.localPosition = localPoint;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        OnCardDragged?.Invoke(this);
+        // Reset position if not played
+        transform.position = originalPosition;
     }
 
     /*

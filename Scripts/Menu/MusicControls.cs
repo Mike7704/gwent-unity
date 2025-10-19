@@ -74,7 +74,7 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
     private void OnTrackChanged(string trackName)
     {
         if (songNameText != null)
-            AudioSystem.Instance.GetCurrentTrackName();
+            songNameText.text = AudioSystem.Instance.GetCurrentTrackName();
     }
 
     private void SetupMusicVolumeSlider()
