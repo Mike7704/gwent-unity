@@ -6,19 +6,25 @@ using UnityEngine;
 public class MainMenu : Singleton<MainMenu>
 {
     // Called when Play button is clicked
-    private void PlayGame()
+    public void PlayGame()
     {
         GameManager.Instance.ChangeState(GameState.SinglePlayer);
     }
 
     // Called when Deck button is clicked
-    private void DeckMenu()
+    public void DeckMenu()
     {
         GameManager.Instance.ChangeState(GameState.DeckMenu);
     }
 
+    // Called when Settings button is clicked
+    public void SettingsMenu()
+    {
+        GameManager.Instance.ChangeState(GameState.SettingsMenu);
+    }
+
     // Called when Quit button is clicked
-    private void QuitGame()
+    public void QuitGame()
     {
         Application.Quit();
     }

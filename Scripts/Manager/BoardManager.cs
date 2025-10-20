@@ -64,9 +64,6 @@ public class BoardManager : Singleton<BoardManager>
     // Gameplay State
     // -------------------------
 
-    [Header("Gameplay Settings")]
-    public int initialHandSize = 10;
-
     private List<CardData> playerHand = new();
     private List<CardData> opponentHand = new();
 
@@ -78,6 +75,14 @@ public class BoardManager : Singleton<BoardManager>
     private List<CardData> opponentRanged = new();
     private List<CardData> opponentSiege = new();
 
+    // Game settings
+    private int initialHandSize = 10;
+    private bool randomisePlayerDeck = false;
+    private int randomiseDeckSize = 25;
+    private int spyDrawAmount = 2;
+    private bool leaderCardsEnabled = true;
+    private bool factionAbilityEnabled = true;
+
     private bool isPlayerTurn = true;
 
     // -------------------------
@@ -87,7 +92,40 @@ public class BoardManager : Singleton<BoardManager>
     void Start()
     {
         Debug.Log("[BoardManager] Initialising board...");
+        SetGameSettings();
+        SetupBoardUI();
         StartGame();
+    }
+
+    /// <summary>
+    /// Set game settings and UI elements.
+    /// </summary>
+    private void SetGameSettings()
+    {
+        initialHandSize = SettingsManager.Instance.InitialHandSize;
+        randomisePlayerDeck = SettingsManager.Instance.RandomisePlayerDeck;
+        randomiseDeckSize = SettingsManager.Instance.RandomiseDeckSize;
+        spyDrawAmount = SettingsManager.Instance.SpyDrawAmount;
+        leaderCardsEnabled = SettingsManager.Instance.LeaderCardEnabled;
+        factionAbilityEnabled = SettingsManager.Instance.FactionAbilityEnabled;
+
+        if (randomisePlayerDeck)
+            DeckManager.Instance.RandomiseDeck(DeckManager.Instance.PlayerDeck, randomiseDeckSize);
+
+        // Generate a random deck for the NPC
+        DeckManager.Instance.RandomiseDeck(DeckManager.Instance.NPCDeck, randomiseDeckSize);
+    }
+
+    /// <summary>
+    /// Sets up the board UI with player and opponent details.
+    /// </summary>
+    private void SetupBoardUI()
+    {
+        // Setup board UI
+        PlayerName.text = "Player";
+        PlayerFaction.text = DeckManager.Instance.PlayerFaction;
+        OpponentName.text = "NPC Opponent";
+        OpponentFaction.text = DeckManager.Instance.NPCFaction;
     }
 
     /// <summary>
@@ -95,9 +133,6 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     private void StartGame()
     {
-        // Generate a random deck for the NPC
-        DeckManager.Instance.RandomiseDeck(DeckManager.Instance.NPCDeck, 25);
-
         // Setup starting hands
         GenerateInitialHand(DeckManager.Instance.PlayerDeck, initialHandSize, playerHand);
         GenerateInitialHand(DeckManager.Instance.NPCDeck, initialHandSize, opponentHand);

@@ -21,6 +21,7 @@ public class AudioSystem : Singleton<AudioSystem>
     private bool initialised = false;
     private int currentIndex = 0;
     private bool isPaused = false;
+    private int voicePercentageChance = 100;
 
     public void Initialise()
     {
@@ -137,10 +138,31 @@ public class AudioSystem : Singleton<AudioSystem>
         return (musicSource.clip != null) ? musicSource.clip.name : "";
     }
 
-    public void SetMusicVolume(float volume)
+    public void SetMuteAudio(bool mute)
     {
-        musicSource.volume = volume;
-        PlayerPrefs.SetFloat("MusicVolume", volume);
+        musicSource.mute = mute;
+        sfxSource.mute = mute;
+        voiceSource.mute = mute;
+    }
+
+    public void SetMusicVolume(float value)
+    {
+        musicSource.volume = value;
+    }
+
+    public void SetSFXVolume(float value)
+    {
+        sfxSource.volume = value;
+    }
+
+    public void SetVoiceVolume(float value)
+    {
+        voiceSource.volume = value;
+    }
+
+    public void SetVoicePercentageChance(int value)
+    {
+        voicePercentageChance = Mathf.Clamp(value, 0, 100);
     }
 
     /// <summary>
@@ -158,6 +180,9 @@ public class AudioSystem : Singleton<AudioSystem>
     /// <param name="clip"></param>
     public void PlayVoice(AudioClip clip)
     {
+        // Check percentage chance for playing a voice line
+        if (voicePercentageChance < RandomUtils.GetRandom(0, 100)) return;
+
         if (voiceSource.isPlaying) voiceSource.Stop();
         voiceSource.clip = clip;
         voiceSource.Play();
