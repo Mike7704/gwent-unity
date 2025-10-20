@@ -1,14 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System;
+using UnityEngine.EventSystems;
 
 public enum SettingType { Float, Int, Bool }
 
 /// <summary>
 /// Option UI component for adjusting a specific game setting.
 /// </summary>
-public class GwentOption : MonoBehaviour
+public class GwentOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI References")]
     public TextMeshProUGUI labelText;
@@ -23,7 +23,6 @@ public class GwentOption : MonoBehaviour
     public float minValue = 0;
     public float maxValue = 10;
     public float step = 1;
-
     private float floatValue;
     private int intValue;
     private bool boolValue;
@@ -115,6 +114,25 @@ public class GwentOption : MonoBehaviour
                 settings.SetSetting(settingKey, boolValue);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Show description on pointer enter.
+    /// </summary>
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (SettingsData.Descriptions.TryGetValue(settingKey, out string description))
+        {
+            SettingsMenu.Instance.ShowDescription(description);
+        }
+    }
+
+    /// <summary>
+    /// Hide description on pointer exit.
+    /// </summary>
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        SettingsMenu.Instance.ClearDescription();
     }
 
     /// <summary>

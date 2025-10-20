@@ -1,7 +1,8 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Game settings data keys and default values.
+/// Game settings data keys, defaults, and descriptions.
 /// </summary>
 public static class SettingsData
 {
@@ -42,4 +43,28 @@ public static class SettingsData
     public const int DefaultSpyDrawAmount = 2;
     public const int DefaultLeaderCardEnabled = 1;
     public const int DefaultFactionAbilityEnabled = 1;
+
+    // Descriptions
+    public static readonly Dictionary<string, string> Descriptions = new()
+    {
+        // Audio
+        { MuteAudioKey, "Completely mutes all game audio." },
+        { MusicVolumeKey, "Sets the volume for music." },
+        { SFXVolumeKey, "Sets the volume for sound effects." },
+        { VoiceVolumeKey, "Sets the volume of voice lines." },
+        { VoicePercentageChanceKey, "Determines how often voice lines are played by cards." },
+
+        // Video
+        { FullscreenKey, "Toggles between fullscreen and windowed mode." },
+        { VSyncKey, "Synchronizes frame rate with your monitor to prevent screen tearing." },
+        { TargetFrameRateKey, "Limits the maximum frames per second the game will render." },
+
+        // Gameplay
+        { InitialHandSizeKey, "Sets the number of cards you start each match with." },
+        { RandomisePlayerDeckKey, "Randomly generates a deck each game." },
+        { RandomiseDeckSizeKey, "Sets the number of cards generated when using a random deck." },
+        { SpyDrawAmountKey, "Controls how many cards are drawn when playing a Spy card." },
+        { LeaderCardEnabledKey, "Enables or disables leader card abilities." },
+        { FactionAbilityEnabledKey, "Enables or disables faction abilities." },
+    };
 }
