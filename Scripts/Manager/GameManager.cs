@@ -67,8 +67,8 @@ public class GameManager : Singleton<GameManager>
         {
             AudioSystem.Instance.Initialise();
             CardDatabase.Instance.LoadAllCards();  // Preload JSON & cache
-            DeckManager.Instance.LoadDeck();
             SettingsManager.Instance.LoadSettings();
+            DeckManager.Instance.LoadDeck();
             systemsInitialised = true;
         }
 

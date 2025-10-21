@@ -41,8 +41,10 @@ public class GwentOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     /// <summary>
     /// Loads the current setting value from SettingsManager and updates the display.
     /// </summary>
-    private void LoadFromSettings()
+    public void LoadFromSettings()
     {
+        if (settings == null) settings = SettingsManager.Instance;
+
         switch (type)
         {
             case SettingType.Float:

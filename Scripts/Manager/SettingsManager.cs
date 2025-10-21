@@ -225,6 +225,37 @@ public class SettingsManager : Singleton<SettingsManager>
     }
 
     /// <summary>
+    /// Resets all settings to their default values, saves, and applies them.
+    /// </summary>
+    public void ResetToDefaults()
+    {
+        // Audio
+        MuteAudio = SettingsData.DefaultMuteAudio == 1;
+        MusicVolume = SettingsData.DefaultMusicVolume;
+        SFXVolume = SettingsData.DefaultSFXVolume;
+        VoiceVolume = SettingsData.DefaultVoiceVolume;
+        VoicePercentageChance = SettingsData.DefaultVoicePercentageChance;
+
+        // Video
+        Fullscreen = SettingsData.DefaultFullscreen == 1;
+        VSync = SettingsData.DefaultVSync == 1;
+        TargetFrameRate = SettingsData.DefaultTargetFrameRate;
+
+        // Gameplay
+        InitialHandSize = SettingsData.DefaultInitialHandSize;
+        RandomisePlayerDeck = SettingsData.DefaultRandomisePlayerDeck == 1;
+        RandomiseDeckSize = SettingsData.DefaultRandomiseDeckSize;
+        SpyDrawAmount = SettingsData.DefaultSpyDrawAmount;
+        LeaderCardEnabled = SettingsData.DefaultLeaderCardEnabled == 1;
+        FactionAbilityEnabled = SettingsData.DefaultFactionAbilityEnabled == 1;
+
+        // Save and apply
+        SaveSettings();
+
+        Debug.Log("[SettingsManager] All settings reset to default values.");
+    }
+
+    /// <summary>
     /// Converts an int stored in PlayerPrefs to a bool.
     /// </summary>
     /// <param name="key"></param>

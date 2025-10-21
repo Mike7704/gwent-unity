@@ -460,7 +460,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSize
-      value: 30
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontStyle
@@ -468,11 +468,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSizeMax
-      value: 30
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSizeMin
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_enableVertexGradient
@@ -597,7 +597,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSize
-      value: 30
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontStyle
@@ -605,11 +605,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSizeMax
-      value: 30
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_fontSizeMin
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 668919572236748079, guid: 59b7ca2b2964bbd49b185a227e63083d, type: 3}
       propertyPath: m_HorizontalAlignment
