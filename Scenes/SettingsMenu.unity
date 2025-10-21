@@ -962,11 +962,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3627259111810330200, guid: 1c4faee10e2862a4b9e8ce53f312c4f4, type: 3}
       propertyPath: m_Name
-      value: ResetProgressButton
+      value: ResetProfileButton
       objectReference: {fileID: 0}
     - target: {fileID: 4794696592417664976, guid: 1c4faee10e2862a4b9e8ce53f312c4f4, type: 3}
       propertyPath: m_text
-      value: Reset All Progress
+      value: Reset Profile
       objectReference: {fileID: 0}
     - target: {fileID: 7946777573671233091, guid: 1c4faee10e2862a4b9e8ce53f312c4f4, type: 3}
       propertyPath: m_Pivot.x
@@ -4568,7 +4568,7 @@ MonoBehaviour:
   DefaultsButton: {fileID: 1059664015}
   descriptionText: {fileID: 1893875102}
   ResetSettingsButton: {fileID: 981987734}
-  ResetProgressButton: {fileID: 497833805}
+  ResetProfileButton: {fileID: 497833805}
   ApplyButton: {fileID: 1753992531}
   BackButton: {fileID: 1472747735}
 --- !u!224 &1556971644 stripped

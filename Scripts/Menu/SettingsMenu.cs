@@ -24,7 +24,7 @@ public class SettingsMenu : Singleton<SettingsMenu>
     [Header("General UI")]
     public TextMeshProUGUI descriptionText;
     public Button ResetSettingsButton;
-    public Button ResetProgressButton;
+    public Button ResetProfileButton;
     public Button ApplyButton;
     public Button BackButton;
 
@@ -41,7 +41,7 @@ public class SettingsMenu : Singleton<SettingsMenu>
 
         // Hook general buttons
         ResetSettingsButton.onClick.AddListener(OnResetSettingsToDefaults);
-        ResetProgressButton.onClick.AddListener(OnResetProgressToDefaults);
+        ResetProfileButton.onClick.AddListener(OnResetProfile);
         ApplyButton.onClick.AddListener(ApplySettings);
         BackButton.onClick.AddListener(BackToMainMenu);
 
@@ -82,6 +82,9 @@ public class SettingsMenu : Singleton<SettingsMenu>
             descriptionText.text = "";
     }
 
+    /// <summary>
+    /// Reset all settings to their default values
+    /// </summary>
     public void OnResetSettingsToDefaults()
     {
         ConfirmationWindow.Instance.Show(
@@ -94,13 +97,16 @@ public class SettingsMenu : Singleton<SettingsMenu>
         );
     }
 
-    public void OnResetProgressToDefaults()
+    /// <summary>
+    /// Reset the player's profile data
+    /// </summary>
+    public void OnResetProfile()
     {
         ConfirmationWindow.Instance.Show(
-            "Reset Progress",
+            "Reset Profile",
             "Do you want to reset all progress?",
             () => {
-                // Reset progress data
+                ProfileManager.Instance.ResetProfile();
                 ShowPanel(currentPanel); // refresh the current panel UI
             }
         );

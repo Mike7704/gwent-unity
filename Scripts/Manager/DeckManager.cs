@@ -221,6 +221,20 @@ public class DeckManager : Singleton<DeckManager>
     }
 
     /// <summary>
+    /// Deletes the saved deck from PlayerPrefs.
+    /// </summary>
+    public void DeleteSavedDeck()
+    {
+        ClearDeck(PlayerDeck, "Player Deck");
+
+        if (PlayerPrefs.HasKey(SaveKey))
+        {
+            PlayerPrefs.DeleteKey(SaveKey);
+            Debug.Log("[DeckManager] Saved deck deleted.");
+        }
+    }
+
+    /// <summary>
     /// Checks whether a card belongs to the selected faction.
     /// </summary>
     public bool IsCardValidForPlayerDeck(CardData card)

@@ -42,6 +42,9 @@ public class GameManager : Singleton<GameManager>
             case GameState.DeckMenu:
                 HandleDeckMenu();
                 break;
+            case GameState.ProfileMenu:
+                HandleProfileMenu();
+                break;
             case GameState.SettingsMenu:
                 HandleSettingsMenu();
                 break;
@@ -68,6 +71,7 @@ public class GameManager : Singleton<GameManager>
             AudioSystem.Instance.Initialise();
             CardDatabase.Instance.LoadAllCards();  // Preload JSON & cache
             SettingsManager.Instance.LoadSettings();
+            ProfileManager.Instance.LoadProfile();
             DeckManager.Instance.LoadDeck();
             systemsInitialised = true;
         }
@@ -84,6 +88,11 @@ public class GameManager : Singleton<GameManager>
     private void HandleDeckMenu()
     {
         LoadScene("DeckMenu");
+    }
+
+    private void HandleProfileMenu()
+    {
+        LoadScene("ProfileMenu");
     }
 
     private void HandleSettingsMenu()
@@ -120,6 +129,7 @@ public enum GameState
     Starting = 0,
     MainMenu = 1,
     DeckMenu = 2,
-    SettingsMenu = 3,
-    SinglePlayer = 4,
+    ProfileMenu = 3,
+    SettingsMenu = 4,
+    SinglePlayer = 5,
 }

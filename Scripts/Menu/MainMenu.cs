@@ -17,6 +17,12 @@ public class MainMenu : Singleton<MainMenu>
         GameManager.Instance.ChangeState(GameState.DeckMenu);
     }
 
+    // Called when Profile button is clicked
+    public void ProfileMenu()
+    {
+        GameManager.Instance.ChangeState(GameState.ProfileMenu);
+    }
+
     // Called when Settings button is clicked
     public void SettingsMenu()
     {
