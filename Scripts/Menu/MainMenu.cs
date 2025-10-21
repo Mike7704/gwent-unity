@@ -26,6 +26,12 @@ public class MainMenu : Singleton<MainMenu>
     // Called when Quit button is clicked
     public void QuitGame()
     {
-        Application.Quit();
+        ConfirmationWindow.Instance.Show(
+            "Quit Game",
+            "Do you want to quit?",
+            () => {
+                Application.Quit();
+            }
+        );
     }
 }

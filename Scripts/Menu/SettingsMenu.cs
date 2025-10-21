@@ -40,8 +40,8 @@ public class SettingsMenu : Singleton<SettingsMenu>
         DefaultsButton.onClick.AddListener(() => ShowPanel(DefaultsPanel));
 
         // Hook general buttons
-        ResetSettingsButton.onClick.AddListener(OnResetDefaults);
-        //ResetProgressButton.onClick.AddListener(ResetProgressToDefaults);
+        ResetSettingsButton.onClick.AddListener(OnResetSettingsToDefaults);
+        ResetProgressButton.onClick.AddListener(OnResetProgressToDefaults);
         ApplyButton.onClick.AddListener(ApplySettings);
         BackButton.onClick.AddListener(BackToMainMenu);
 
@@ -82,9 +82,28 @@ public class SettingsMenu : Singleton<SettingsMenu>
             descriptionText.text = "";
     }
 
-    public void OnResetDefaults()
+    public void OnResetSettingsToDefaults()
     {
-        SettingsManager.Instance.ResetToDefaults();
+        ConfirmationWindow.Instance.Show(
+            "Reset Settings",
+            "Do you want to reset all settings?",
+            () => {
+                SettingsManager.Instance.ResetToDefaults();
+                ShowPanel(currentPanel); // refresh the current panel UI
+            }
+        );
+    }
+
+    public void OnResetProgressToDefaults()
+    {
+        ConfirmationWindow.Instance.Show(
+            "Reset Progress",
+            "Do you want to reset all progress?",
+            () => {
+                // Reset progress data
+                ShowPanel(currentPanel); // refresh the current panel UI
+            }
+        );
     }
 
     /// <summary>
