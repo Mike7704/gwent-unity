@@ -3,17 +3,15 @@ using System.Collections.Generic;
 
 public static class CardSorter
 {
-    private static readonly string[] defaultRangeOrder = { CardDefs.Range.Melee, CardDefs.Range.Agile, CardDefs.Range.Ranged, CardDefs.Range.Siege };
+    private static readonly string[] rangeOrder = { CardDefs.Range.Melee, CardDefs.Range.Agile, CardDefs.Range.Ranged, CardDefs.Range.Siege };
 
     /// <summary>
     /// Sorts a list of cards by type, strength, range, and ID.
     /// </summary>
-    public static void Sort(List<CardData> cards, string[] rangeOrder = null)
+    public static void Sort(List<CardData> cards)
     {
         if (cards == null || cards.Count == 0)
             return;
-
-        rangeOrder ??= defaultRangeOrder;
 
         cards.Sort((a, b) =>
         {

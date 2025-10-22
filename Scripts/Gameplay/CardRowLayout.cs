@@ -14,13 +14,12 @@ public class CardRowLayout : MonoBehaviour
     void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
-    }
-
-    void Update()
-    {
         LayoutCards();
     }
 
+    /// <summary>
+    /// Repositions and resizes child card RectTransforms to fit within the container,
+    /// </summary>
     public void LayoutCards()
     {
         if (rectTransform == null)

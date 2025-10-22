@@ -20,6 +20,30 @@ public class CardData
     public string videoPath;
     public bool unlocked;
     public bool challengeRewardCard;
+
+    /// <summary>
+    /// Clones the card data for creating instances in gameplay.
+    /// </summary>
+    /// <returns></returns>
+    public CardData Clone()
+    {
+        return new CardData
+        {
+            id = id,
+            faction = faction,
+            name = name,
+            quote = quote,
+            strength = strength,
+            range = range,
+            type = type,
+            ability = ability,
+            target = new List<CardTarget>(target.ConvertAll(t => new CardTarget { id = t.id, name = t.name })),
+            imagePath = imagePath,
+            videoPath = videoPath,
+            unlocked = unlocked,
+            challengeRewardCard = challengeRewardCard
+        };
+    }
 }
 
 /// <summary>
