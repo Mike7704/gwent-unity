@@ -258,8 +258,8 @@ public class BoardManager : Singleton<BoardManager>
         state.OpponentLife = 2;
 
         // Create both decks from DeckManager
-        CreateDeck(DeckManager.Instance.PlayerDeck, PlayerHandRow, isPlayer: true);
-        CreateDeck(DeckManager.Instance.NPCDeck, OpponentHandRow, isPlayer: false);
+        CreateDeck(DeckManager.Instance.PlayerDeck, PlayerDeckContainer, isPlayer: true);
+        CreateDeck(DeckManager.Instance.NPCDeck, OpponentDeckContainer, isPlayer: false);
 
         // Draw initial hands
         DrawInitialHand(state.playerDeck, isPlayer: true);
@@ -274,7 +274,7 @@ public class BoardManager : Singleton<BoardManager>
     /// <param name="sourceDeck"></param>
     /// <param name="handRow"></param>
     /// <param name="isPlayer"></param>
-    private void CreateDeck(List<CardData> sourceDeck, Transform handRow, bool isPlayer)
+    private void CreateDeck(List<CardData> sourceDeck, Transform deckContainer, bool isPlayer)
     {
         // Make a copy so the original DeckManager list isn't modified during gameplay
         List<CardData> copiedDeck = new List<CardData>();
@@ -288,7 +288,7 @@ public class BoardManager : Singleton<BoardManager>
             copiedDeck.Add(newCard);
 
             // Create UI for each card and store the mapping
-            CardUI cardUI = CardManager.Instance.CreateCard(newCard, handRow);
+            CardUI cardUI = CardManager.Instance.CreateCard(newCard, cropped: true, deckContainer);
             cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
             cardUIMap[newCard] = cardUI;
             SetupCardInteraction(cardUI);

@@ -152,8 +152,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 90.989235, y: 20.000006}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_AnchoredPosition: {x: 90.989235, y: 13}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &42478394
 MonoBehaviour:
@@ -167,8 +167,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &55768559
 GameObject:
@@ -204,7 +204,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 771, y: 188}
-  m_SizeDelta: {x: 317.245, y: 150}
+  m_SizeDelta: {x: 317.245, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &55768561
 MonoBehaviour:
@@ -218,8 +218,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &113641955
 GameObject:
@@ -474,8 +474,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 87.566055, y: 459.4377}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_AnchoredPosition: {x: 87.566055, y: 464}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &171157628
 MonoBehaviour:
@@ -489,8 +489,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1001 &179187132
 PrefabInstance:
@@ -667,7 +667,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 90.989235, y: -273}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &249505360
 MonoBehaviour:
@@ -681,8 +681,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &251383878
 GameObject:
@@ -870,8 +870,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 95, y: -426}
-  m_SizeDelta: {x: 1004.8905, y: 150}
+  m_AnchoredPosition: {x: 95, y: -429}
+  m_SizeDelta: {x: 1004.8905, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &383867272
 MonoBehaviour:
@@ -885,8 +885,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &430177247
 GameObject:
@@ -3011,7 +3011,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 866, y: 386}
+  m_AnchoredPosition: {x: 693, y: 386}
   m_SizeDelta: {x: 103.517, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1255269853
@@ -3805,8 +3805,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 87.566055, y: 316.4377}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_AnchoredPosition: {x: 87.566055, y: 321}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1801247525
 MonoBehaviour:
@@ -3820,8 +3820,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &1873079429
 GameObject:
@@ -4006,8 +4006,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 87.566055, y: 168.4377}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_AnchoredPosition: {x: 87.566055, y: 173}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1896451006
 MonoBehaviour:
@@ -4021,8 +4021,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &1918801660
 GameObject:
@@ -4272,7 +4272,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 693, y: 386}
+  m_AnchoredPosition: {x: 866, y: 386}
   m_SizeDelta: {x: 103.517, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2011410056
@@ -4308,8 +4308,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 90.989235, y: -122.99999}
-  m_SizeDelta: {x: 1000, y: 150}
+  m_AnchoredPosition: {x: 90.989235, y: -129}
+  m_SizeDelta: {x: 1000, y: 131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2011410058
 MonoBehaviour:
@@ -4323,8 +4323,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c2250abce1e7441993258725c04dba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardRowLayout
-  cardWidth: 96
-  cardHeight: 150
+  cardWidth: 111
+  cardHeight: 131
   spacing: 0
 --- !u!1 &2029950080
 GameObject:

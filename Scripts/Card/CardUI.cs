@@ -28,6 +28,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
     private bool isSpecialCard = false; // True for Special and Leader cards
     private bool hasBanner = false;
+    private bool cropped = false; // Whether to show the description panel
 
     // Events for managers to subscribe
     public event System.Action<CardUI> OnCardClicked;
@@ -38,7 +39,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     /// <summary>
     /// Setup the card UI elements based on the provided CardData.
     /// </summary>
-    public void Setup(CardData data)
+    public void Setup(CardData data, bool cropped)
     {
         cardData = data;
 
@@ -50,6 +51,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
         isSpecialCard = (cardData.type == CardDefs.Type.Special || cardData.type == CardDefs.Type.Leader);
         hasBanner = !(cardData.faction == CardDefs.Faction.Neutral || cardData.type == CardDefs.Type.Special || cardData.type == CardDefs.Type.Leader);
+        this.cropped = cropped;
 
         SetBackground();
         SetPanel();
@@ -86,6 +88,13 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     private void SetPanel()
     {
         if (panel == null) return;
+
+        if (cropped)
+        {
+            panel.enabled = false;
+            return;
+        }
+        panel.enabled = true;
 
         if (hasBanner)
         {
@@ -148,27 +157,28 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
         if (cardData.type == CardDefs.Type.Hero)
         {
-            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_hero");
+            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_hero" + (cropped ? "_cropped" : ""));
         }
         else if (cardData.type == CardDefs.Type.Leader || cardData.type == CardDefs.Type.Special)
         {
-            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_special");
+            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_special" + (cropped ? "_cropped" : ""));
         }
         else
         {
             switch (cardData.faction)
             {
                 case CardDefs.Faction.NorthernRealms:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_northern_realms"); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_northern_realms" + (cropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Nilfgaard:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_nilfgaard"); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_nilfgaard" + (cropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Scoiatael:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_scoiatael"); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_scoiatael" + (cropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Monsters:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_monsters"); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_monsters" + (cropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Skellige:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_skellige"); break;
-                default: border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_neutral"); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_skellige" + (cropped ? "_cropped" : "")); break;
+                default:
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_neutral" + (cropped ? "_cropped" : "")); break;
             }
         }
     }
@@ -298,6 +308,13 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     {
         if (nameText == null) return;
 
+        if (cropped)
+        {
+            nameText.enabled = false;
+            return;
+        }
+        nameText.enabled = true;
+
         nameText.text = cardData.name;
 
         // Shift text right to avoid overlapping banner
@@ -310,11 +327,35 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     {
         if (quoteText == null) return;
 
+        if (cropped)
+        {
+            quoteText.enabled = false;
+            return;
+        }
+        quoteText.enabled = true;
+
         quoteText.text = "\"" + cardData.quote + "\"";
 
         // Shift text right to avoid overlapping banner
         RectTransform rect = quoteText.GetComponent<RectTransform>();
-        rect.anchorMin = (hasBanner ? new Vector2(0.22f, 0.11f) : new Vector2(0.05f, 0.11f));
+        rect.anchorMin = (hasBanner ? new Vector2(0.22f, 0f) : new Vector2(0.05f, 0f));
+
+        // Dynamically adjust font size based on panel size
+        float minFontSize = 1f;
+        float maxFontSize = 20f;
+        float lineSpacingRatio = - 3f;
+        float paragraphSpacingRatio = - 1.5f;
+        float panelWidth = panel.preferredWidth;
+        float panelHeight = panel.preferredHeight;
+
+        float targetFontSize = Mathf.Min(panelWidth, panelHeight) * 0.07f;
+
+        // Clamp the font size to stay within min and max values
+        targetFontSize = Mathf.Clamp(targetFontSize, minFontSize, maxFontSize);
+
+        quoteText.fontSize = targetFontSize;
+        quoteText.lineSpacing = targetFontSize * lineSpacingRatio;
+        quoteText.paragraphSpacing = targetFontSize * paragraphSpacingRatio;
     }
 
     // Set card strength text

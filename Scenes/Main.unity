@@ -979,6 +979,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardManager
   cardPrefab: {fileID: 8460689964350094239, guid: 2afb7ca8d93e5ee4885b6eb932cb7138, type: 3}
+  cardCroppedPrefab: {fileID: 8460689964350094239, guid: 4bf1646b1f89b3642b1b379b2b37d6a9, type: 3}
   cardParent: {fileID: 0}
   activeCards: []
 --- !u!1 &1568989882

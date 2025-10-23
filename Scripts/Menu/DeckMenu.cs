@@ -69,7 +69,7 @@ public class DeckMenu : Singleton<DeckMenu>
 
         foreach (var data in cards)
         {
-            CardUI cardUI = CardManager.Instance.CreateCard(data, ContentPanel);
+            CardUI cardUI = CardManager.Instance.CreateCard(data, cropped: false, ContentPanel);
             cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(DeckManager.Instance.PlayerDeck.Contains(data));
             visibleCardsDict[data] = cardUI;
@@ -96,7 +96,7 @@ public class DeckMenu : Singleton<DeckMenu>
 
         foreach (var data in playerDeck)
         {
-            CardUI cardUI = CardManager.Instance.CreateCard(data, ContentPanel);
+            CardUI cardUI = CardManager.Instance.CreateCard(data, cropped: false, ContentPanel);
             cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(false);
             visibleCardsDict[data] = cardUI;
@@ -187,7 +187,7 @@ public class DeckMenu : Singleton<DeckMenu>
             {
                 if (!visibleCardsDict.ContainsKey(cardData))
                 {
-                    CardUI cardUI = CardManager.Instance.CreateCard(cardData, ContentPanel);
+                    CardUI cardUI = CardManager.Instance.CreateCard(cardData, cropped: false, ContentPanel);
                     visibleCardsDict[cardData] = cardUI;
                 }
             }

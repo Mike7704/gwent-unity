@@ -8,6 +8,7 @@ public class CardManager : Singleton<CardManager>
 {
     [Header("Card Prefab & Parent")]
     [SerializeField] private GameObject cardPrefab;
+    [SerializeField] private GameObject cardCroppedPrefab;
     [SerializeField] private Transform cardParent;
 
     [Header("Runtime Data")]
@@ -25,9 +26,9 @@ public class CardManager : Singleton<CardManager>
     /// <param name="data">Card data to display.</param>
     /// <param name="parent">Parent transform for the card (optional).</param>
     /// <returns>Initialised CardUI instance.</returns>
-    public CardUI CreateCard(CardData data, Transform parent = null)
+    public CardUI CreateCard(CardData data, bool cropped, Transform parent = null)
     {
-        if (cardPrefab == null)
+        if (cardPrefab == null || cardCroppedPrefab == null)
         {
             Debug.LogError("[CardManager] Missing cardPrefab reference!");
             return null;
@@ -37,7 +38,7 @@ public class CardManager : Singleton<CardManager>
             parent = cardParent;
 
         // Get a pooled or new card
-        CardUI cardUI = GetCardFromPool();
+        CardUI cardUI = GetCardFromPool(cropped);
         if (cardUI == null)
             return null;
 
@@ -48,7 +49,7 @@ public class CardManager : Singleton<CardManager>
         cardUI.transform.SetParent(parent, false);
         cardUI.gameObject.SetActive(true);
 
-        cardUI.Setup(data);
+        cardUI.Setup(data, cropped);
 
         return cardUI;
     }
@@ -81,7 +82,7 @@ public class CardManager : Singleton<CardManager>
     /// <summary>
     /// Retrieves a card from the pool or instantiates a new one.
     /// </summary>
-    private CardUI GetCardFromPool()
+    private CardUI GetCardFromPool(bool cropped)
     {
         // Dequeue until we find a valid, alive CardUI or run out of pool entries
         while (cardPool.Count > 0)
@@ -93,7 +94,7 @@ public class CardManager : Singleton<CardManager>
         }
 
         // No valid pooled item — instantiate a new one
-        GameObject cardObj = Instantiate(cardPrefab);
+        GameObject cardObj = Instantiate(cropped ? cardCroppedPrefab : cardPrefab);
         CardUI cardUI = cardObj.GetComponent<CardUI>();
         if (cardUI == null)
         {
