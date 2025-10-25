@@ -17,6 +17,7 @@ public class CardDatabase : Singleton<CardDatabase>
     public Dictionary<string, List<CardData>> factionCards = new Dictionary<string, List<CardData>>();
     public Dictionary<string, List<CardData>> factionLeaders = new Dictionary<string, List<CardData>>();
 
+    private Dictionary<int, CardData> cardIDLookup = new Dictionary<int, CardData>();
 
     /// <summary>
     /// Called at the start of the game to load all card data from JSON files in Resources/Decks.
@@ -106,6 +107,17 @@ public class CardDatabase : Singleton<CardDatabase>
 
         SortFactionCards();
 
+        // Build fast lookup
+        cardIDLookup.Clear();
+        foreach (var card in allCards)
+        {
+            if (!cardIDLookup.ContainsKey(card.id))
+                cardIDLookup.Add(card.id, card);
+            else
+                Debug.LogWarning($"[CardDatabase] Duplicate card ID detected: {card.id}");
+        }
+
+
         Debug.Log($"[CardDatabase] Loaded {allCards.Count} cards across {factionCards.Count} factions.");
     }
 
@@ -136,7 +148,11 @@ public class CardDatabase : Singleton<CardDatabase>
 
     public CardData GetCardById(int id)
     {
-        return allCards.Find(c => c.id == id);
+        if (cardIDLookup.TryGetValue(id, out var card))
+            return card;
+
+        Debug.LogWarning($"[CardDatabase] No card found with ID {id}");
+        return null;
     }
 
     private void SortFactionCards()

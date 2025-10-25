@@ -3,12 +3,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.Windows;
 
 /// <summary>
 /// Handles visual representation of a single card in the UI.
 /// Uses CardData from the database and loads assets via ResourceSystem.
 /// </summary>
-public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [Header("UI References")]
     public Image background;
@@ -28,7 +29,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
     private bool isSpecialCard = false; // True for Special and Leader cards
     private bool hasBanner = false;
-    private bool cropped = false; // Whether to show the description panel
+    public bool isCropped = false; // Whether to show the description panel
+    public bool isInteractable = true;
+    public bool isDraggable = false;
 
     // Events for managers to subscribe
     public event System.Action<CardUI> OnCardClicked;
@@ -39,7 +42,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     /// <summary>
     /// Setup the card UI elements based on the provided CardData.
     /// </summary>
-    public void Setup(CardData data, bool cropped)
+    public void Setup(CardData data, float width, float height, bool cropped)
     {
         cardData = data;
 
@@ -51,19 +54,21 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
         isSpecialCard = (cardData.type == CardDefs.Type.Special || cardData.type == CardDefs.Type.Leader);
         hasBanner = !(cardData.faction == CardDefs.Faction.Neutral || cardData.type == CardDefs.Type.Special || cardData.type == CardDefs.Type.Leader);
-        this.cropped = cropped;
+        this.isCropped = cropped;
+        isInteractable = true;
+        isDraggable = false;
 
         SetBackground();
         SetPanel();
         SetBanner();
-        SetBorder();
+        SetBorder(isMouseHover: false);
 
         SetStrengthIcon();
         SetRangeIcon();
         SetAbilityIcon();
 
         SetNameText();
-        SetQuoteText();
+        SetQuoteText(width, height);
         SetStrengthText();
 
         ShowCardSelectedOverlay(false);
@@ -89,7 +94,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     {
         if (panel == null) return;
 
-        if (cropped)
+        if (isCropped)
         {
             panel.enabled = false;
             return;
@@ -151,34 +156,38 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     }
 
     // Set border image based on type and faction
-    private void SetBorder()
+    private void SetBorder(bool isMouseHover)
     {
         if (border == null) return;
 
-        if (cardData.type == CardDefs.Type.Hero)
+        if (isMouseHover)
         {
-            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_hero" + (cropped ? "_cropped" : ""));
+            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_glow" + (isCropped ? "_cropped" : ""));
+        }
+        else if (cardData.type == CardDefs.Type.Hero)
+        {
+            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_hero" + (isCropped ? "_cropped" : ""));
         }
         else if (cardData.type == CardDefs.Type.Leader || cardData.type == CardDefs.Type.Special)
         {
-            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_special" + (cropped ? "_cropped" : ""));
+            border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_special" + (isCropped ? "_cropped" : ""));
         }
         else
         {
             switch (cardData.faction)
             {
                 case CardDefs.Faction.NorthernRealms:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_northern_realms" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_northern_realms" + (isCropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Nilfgaard:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_nilfgaard" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_nilfgaard" + (isCropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Scoiatael:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_scoiatael" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_scoiatael" + (isCropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Monsters:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_monsters" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_monsters" + (isCropped ? "_cropped" : "")); break;
                 case CardDefs.Faction.Skellige:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_skellige" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_skellige" + (isCropped ? "_cropped" : "")); break;
                 default:
-                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_neutral" + (cropped ? "_cropped" : "")); break;
+                    border.sprite = ResourceSystem.Instance.LoadSprite("Cards/components/border_neutral" + (isCropped ? "_cropped" : "")); break;
             }
         }
     }
@@ -308,7 +317,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     {
         if (nameText == null) return;
 
-        if (cropped)
+        if (isCropped)
         {
             nameText.enabled = false;
             return;
@@ -323,39 +332,53 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     }
 
     // Set card quote text
-    private void SetQuoteText()
+    private void SetQuoteText(float cardWidth, float cardHeight)
     {
         if (quoteText == null) return;
 
-        if (cropped)
+        if (isCropped)
         {
             quoteText.enabled = false;
             return;
         }
         quoteText.enabled = true;
 
-        quoteText.text = "\"" + cardData.quote + "\"";
+        string nickname = "";
+        string quote = cardData.quote;
+        if (quote.Contains("\n"))
+        { 
+            // Split quote into nickname and quote
+            string[] parts = quote.Split(new[] { '\n' }, 2);
+            nickname = $"--- {parts[0]} ---\n";
+            quote = $"\"{parts[1]}\"";
+        }
+        else
+            quote = $"\"{quote}\"";
+
+        quoteText.text = $"{nickname}<i>{quote}</i>";
 
         // Shift text right to avoid overlapping banner
         RectTransform rect = quoteText.GetComponent<RectTransform>();
         rect.anchorMin = (hasBanner ? new Vector2(0.22f, 0f) : new Vector2(0.05f, 0f));
 
-        // Dynamically adjust font size based on panel size
+        // Dynamically adjust font size based on the text component's current size
+        // Font scaling variables
         float minFontSize = 1f;
-        float maxFontSize = 20f;
-        float lineSpacingRatio = - 3f;
-        float paragraphSpacingRatio = - 1.5f;
-        float panelWidth = panel.preferredWidth;
-        float panelHeight = panel.preferredHeight;
+        float maxFontSize = 30f;
+        // Reference values (370x575 card = 20 font)
+        float referenceWidth = 370f;
+        float referenceHeight = 575f;
+        float referenceFontSize = 20f;
 
-        float targetFontSize = Mathf.Min(panelWidth, panelHeight) * 0.07f;
-
-        // Clamp the font size to stay within min and max values
+        // Font size calculation
+        float scaleFactor = referenceFontSize / Mathf.Min(referenceWidth, referenceHeight);
+        float targetFontSize = Mathf.Min(cardWidth, cardHeight) * scaleFactor;
         targetFontSize = Mathf.Clamp(targetFontSize, minFontSize, maxFontSize);
 
-        quoteText.fontSize = targetFontSize;
-        quoteText.lineSpacing = targetFontSize * lineSpacingRatio;
-        quoteText.paragraphSpacing = targetFontSize * paragraphSpacingRatio;
+        // Apply font settings
+        quoteText.fontSize = Mathf.RoundToInt(targetFontSize);
+        quoteText.lineSpacing = targetFontSize * -1;
+        quoteText.paragraphSpacing = targetFontSize * -1;
     }
 
     // Set card strength text
@@ -417,20 +440,56 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
     // Interaction Handlers
     // -------------------------
 
+    public void SetInteractable(bool value)
+    {
+        isInteractable = value;
+    }
+
+    public void SetDraggable(bool value)
+    {
+        isDraggable = value;
+    }
+
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (cardData == null) return;
+        if (cardData == null || !isInteractable) return;
 
-        OnCardClicked?.Invoke(this);
+        if (eventData.button == PointerEventData.InputButton.Left)
+        {
+            OnCardClicked?.Invoke(this);
+        }
+
+        else if (eventData.button == PointerEventData.InputButton.Right)
+        {
+            InspectCardWindow.Instance.Show(cardData);
+        }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (cardData == null || !isInteractable) return;
+
+        SetBorder(isMouseHover: true);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (cardData == null || !isInteractable) return;
+
+        SetBorder(isMouseHover: false);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
+        if (cardData == null || !isInteractable || !isDraggable) return;
+
         originalPosition = transform.position;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (cardData == null || !isInteractable || !isDraggable) return;
+
         // Smoothly move card with cursor
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
         transform.parent as RectTransform,
@@ -444,22 +503,11 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, ID
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (cardData == null || !isInteractable || !isDraggable) return;
+
         OnCardDragged?.Invoke(this);
         // Reset position if not played
         transform.position = originalPosition;
     }
-
-    /*
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        if (hoverOutline != null)
-            hoverOutline.SetActive(true);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        if (hoverOutline != null)
-            hoverOutline.SetActive(false);
-    }
-    */
+    
 }
