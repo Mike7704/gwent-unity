@@ -18,6 +18,8 @@ public class BoardState
     public bool IsGameOver { get; set; }
     public int PlayerLife { get; set; }
     public int OpponentLife { get; set; }
+    public List<int> PlayerRoundScores { get; private set; } = new();
+    public List<int> OpponentRoundScores { get; private set; } = new();
 
     // Player and Opponent decks
     public List<CardData> playerDeck = new();
@@ -66,6 +68,15 @@ public class BoardState
     public int GetOpponentTotalScore()
     {
         return CalculateRowScore(opponentMelee) + CalculateRowScore(opponentRanged) + CalculateRowScore(opponentSiege);
+    }
+
+    /// <summary>
+    /// Record scores at the end of each round for the end screen
+    /// </summary>
+    public void RecordRoundScores()
+    {
+        PlayerRoundScores.Add(GetPlayerTotalScore());
+        OpponentRoundScores.Add(GetOpponentTotalScore());
     }
 }
 

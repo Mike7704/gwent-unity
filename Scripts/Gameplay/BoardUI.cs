@@ -47,6 +47,20 @@ public class BoardUI : MonoBehaviour
     public TextMeshProUGUI BannerMessage;
     public Sprite[] BannerSprites;
 
+    [Header("End Screen")]
+    public GameObject EndScreenContainer;
+    public Button EndScreenButton;
+    public Image EndScreenImage;
+    public TextMeshProUGUI PlayerEndScreenName;
+    public TextMeshProUGUI PlayerRound1Score;
+    public TextMeshProUGUI PlayerRound2Score;
+    public TextMeshProUGUI PlayerRound3Score;
+    public TextMeshProUGUI OpponentEndScreenName;
+    public TextMeshProUGUI OpponentRound1Score;
+    public TextMeshProUGUI OpponentRound2Score;
+    public TextMeshProUGUI OpponentRound3Score;
+    public Sprite[] EndScreenSprites;
+
     /// <summary>
     /// Updates all score and hand/deck counts based on current state.
     /// </summary>
@@ -129,6 +143,38 @@ public class BoardUI : MonoBehaviour
         BannerImage.enabled = false;
         BannerMessage.text = "";
     }
+
+    /// <summary>
+    /// Displays the end screen with details
+    /// </summary>
+    public void ShowEndScreen(EndScreen endScreen, BoardManager boardManager, BoardState state)
+    {
+        HideBanner();
+
+        EndScreenContainer.SetActive(true);
+        EndScreenButton.Select();
+        EndScreenButton.onClick.RemoveAllListeners();
+        EndScreenButton.onClick.AddListener(boardManager.QuitGame);
+        EndScreenImage.sprite = EndScreenSprites[(int)endScreen];
+
+        PlayerEndScreenName.text = PlayerName.text;
+        PlayerRound1Score.text = GetRoundScore(state.PlayerRoundScores, 0);
+        PlayerRound2Score.text = GetRoundScore(state.PlayerRoundScores, 1);
+        PlayerRound3Score.text = GetRoundScore(state.PlayerRoundScores, 2);
+
+        OpponentEndScreenName.text = OpponentName.text;
+        OpponentRound1Score.text = GetRoundScore(state.OpponentRoundScores, 0);
+        OpponentRound2Score.text = GetRoundScore(state.OpponentRoundScores, 1);
+        OpponentRound3Score.text = GetRoundScore(state.OpponentRoundScores, 2);
+    }
+    public void HideEndScreen()
+    {
+        EndScreenContainer.SetActive(false);
+    }
+    private string GetRoundScore(List<int> scores, int index)
+    {
+        return (index < scores.Count) ? scores[index].ToString() : "-";
+    }
 }
 
 public enum Banner
@@ -146,4 +192,11 @@ public enum Banner
     Scoiatael,
     Monsters,
     Skellige
+}
+
+public enum EndScreen
+{
+    Win,
+    Draw,
+    Lose
 }

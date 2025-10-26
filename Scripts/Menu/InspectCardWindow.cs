@@ -154,6 +154,7 @@ public class InspectCardWindow : Singleton<InspectCardWindow>
                 break;
         }
     }
+
     /// <summary>
     /// Allow user to inspect the target cards
     /// </summary>

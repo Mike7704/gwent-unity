@@ -274,6 +274,7 @@ public class BoardManager : Singleton<BoardManager>
 
         int playerScore = state.GetPlayerTotalScore();
         int opponentScore = state.GetOpponentTotalScore();
+        state.RecordRoundScores();
 
         if (playerScore > opponentScore)
         {
@@ -316,22 +317,18 @@ public class BoardManager : Singleton<BoardManager>
         if (state.PlayerLife == 0 && state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] The game ends in a draw!");
-            boardUI.ShowBanner(Banner.RoundDraw, "You drew the game");
+            boardUI.ShowEndScreen(EndScreen.Draw, this, state);
         }
         else if (state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] Player wins the game!");
-            boardUI.ShowBanner(Banner.RoundWin, "You won the game");
+            boardUI.ShowEndScreen(EndScreen.Win, this, state);
         }
         else
         {
             Debug.Log("[BoardManager] Opponent wins the game!");
-            boardUI.ShowBanner(Banner.RoundLoss, "You lost the game");
+            boardUI.ShowEndScreen(EndScreen.Lose, this, state);
         }
-
-        yield return new WaitForSeconds(roundDelay);
-
-        QuitGame();
 
         yield break;
     }
@@ -396,6 +393,7 @@ public class BoardManager : Singleton<BoardManager>
         DrawInitialHand(state.opponentDeck, isPlayer: false);
 
         boardUI.HideBanner();
+        boardUI.HideEndScreen();
         UpdateBoardUI();
     }
 
@@ -605,7 +603,7 @@ public class BoardManager : Singleton<BoardManager>
     /// <summary>
     /// End the game and display the main menu
     /// </summary>
-    private void QuitGame()
+    public void QuitGame()
     {
         StopAllCoroutines();
         CleanupBoard();
