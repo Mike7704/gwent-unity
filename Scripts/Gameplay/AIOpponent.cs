@@ -30,6 +30,7 @@ public class AIOpponent
         if (state.opponentHand.Count == 0)
         {
             Debug.Log("[AIOpponent] No cards left. Passing turn...");
+            boardManager.PassRound(isPlayer: false);
             yield break;
         }
 

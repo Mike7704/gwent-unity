@@ -12,6 +12,8 @@ public class BoardState
     public bool PlayerCanAct { get; set; }
     public bool IsCardResolving { get; set; }
     public bool IsPlayerTurn { get; set; }
+    public bool PlayerHasPassed { get; set; }
+    public bool OpponentHasPassed { get; set; }
     public bool IsRoundOver { get; set; }
     public bool IsGameOver { get; set; }
     public int PlayerLife { get; set; }

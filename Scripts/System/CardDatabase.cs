@@ -151,6 +151,10 @@ public class CardDatabase : Singleton<CardDatabase>
         if (cardIDLookup.TryGetValue(id, out var card))
             return card;
 
+        // Cards during gameplay may have 1000 ID offset
+        if (cardIDLookup.TryGetValue(id - 1000, out var card2))
+            return card2;
+
         Debug.LogWarning($"[CardDatabase] No card found with ID {id}");
         return null;
     }

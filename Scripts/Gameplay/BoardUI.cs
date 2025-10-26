@@ -9,8 +9,10 @@ public class BoardUI : MonoBehaviour
 {
     [Header("Player UI")]
     public Image PlayerTurnIndicator;
+    public Image PlayerWinningIndicator;
     public Image PlayerLife1;
     public Image PlayerLife2;
+    public TextMeshProUGUI PlayerPassedText;
     public TextMeshProUGUI PlayerName;
     public TextMeshProUGUI PlayerFaction;
     public TextMeshProUGUI PlayerHandSize;
@@ -22,8 +24,10 @@ public class BoardUI : MonoBehaviour
 
     [Header("Opponent UI")]
     public Image OpponentTurnIndicator;
+    public Image OpponentWinningIndicator;
     public Image OpponentLife1;
     public Image OpponentLife2;
+    public TextMeshProUGUI OpponentPassedText;
     public TextMeshProUGUI OpponentName;
     public TextMeshProUGUI OpponentFaction;
     public TextMeshProUGUI OpponentHandSize;
@@ -56,18 +60,21 @@ public class BoardUI : MonoBehaviour
         PlayerMeleeScore.text = state.CalculateRowScore(state.playerMelee).ToString();
         PlayerRangedScore.text = state.CalculateRowScore(state.playerRanged).ToString();
         PlayerSiegeScore.text = state.CalculateRowScore(state.playerSiege).ToString();
-        PlayerTotalScore.text = state.GetPlayerTotalScore().ToString();
 
         OpponentMeleeScore.text = state.CalculateRowScore(state.opponentMelee).ToString();
         OpponentRangedScore.text = state.CalculateRowScore(state.opponentRanged).ToString();
         OpponentSiegeScore.text = state.CalculateRowScore(state.opponentSiege).ToString();
-        OpponentTotalScore.text = state.GetOpponentTotalScore().ToString();
+
+        int playerScore = state.GetPlayerTotalScore();
+        int opponentScore = state.GetOpponentTotalScore();
+        PlayerTotalScore.text = playerScore.ToString();
+        OpponentTotalScore.text = opponentScore.ToString();
 
         // -------------------------
-        // Turn indicator
+        // Winnding indicator
         // -------------------------
-        PlayerTurnIndicator.enabled = state.IsPlayerTurn;
-        OpponentTurnIndicator.enabled = !state.IsPlayerTurn;
+        PlayerWinningIndicator.enabled = playerScore > opponentScore;
+        OpponentWinningIndicator.enabled = opponentScore > playerScore;
 
         // -------------------------
         // Life indicators
@@ -77,6 +84,18 @@ public class BoardUI : MonoBehaviour
 
         OpponentLife1.sprite = state.OpponentLife >= 1 ? FullLifeSprite : LostLifeSprite;
         OpponentLife2.sprite = state.OpponentLife >= 2 ? FullLifeSprite : LostLifeSprite;
+
+        // -------------------------
+        // Passed indicator
+        // -------------------------
+        PlayerPassedText.enabled = state.PlayerHasPassed;
+        OpponentPassedText.enabled = state.OpponentHasPassed;
+
+        // -------------------------
+        // Turn indicator
+        // -------------------------
+        PlayerTurnIndicator.enabled = state.IsPlayerTurn;
+        OpponentTurnIndicator.enabled = !state.IsPlayerTurn;
     }
 
     /// <summary>

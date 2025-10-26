@@ -15,6 +15,7 @@ public class ConfirmationWindow : Singleton<ConfirmationWindow>
     public Button noButton;
     public Button yesButton;
 
+    public bool isVisible = false;
     private Action onConfirm;
 
     void Start()
@@ -29,12 +30,13 @@ public class ConfirmationWindow : Singleton<ConfirmationWindow>
     /// </summary>
     public void Show(string title, string message, Action confirmAction)
     {
+        panel.SetActive(true);
+        isVisible = true;
+        noButton.Select(); // Focus on No button by default
+
         titleText.text = title;
         messageText.text = message;
         onConfirm = confirmAction;
-
-        panel.SetActive(true);
-        noButton.Select(); // Focus on No button by default
     }
 
     private void OnYesClicked()
@@ -50,7 +52,8 @@ public class ConfirmationWindow : Singleton<ConfirmationWindow>
 
     public void Hide()
     {
-        panel.SetActive(false);
         onConfirm = null;
+        isVisible = false;
+        panel.SetActive(false);
     }
 }

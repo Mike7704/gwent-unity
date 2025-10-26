@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -141,7 +142,7 @@ public class CardZoneManager
     }
 
     /// <summary>
-    /// Adds a card to the graveyard.
+    /// Adds a standard card to the graveyard.
     /// </summary>
     public void AddCardToGraveyard(CardData card, bool isPlayer)
     {
@@ -150,9 +151,49 @@ public class CardZoneManager
         List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
         Transform graveyardTransform = isPlayer ? board.PlayerGraveyardContainer : board.OpponentGraveyardContainer;
 
-        MoveCard(card, fromZone, graveyard, graveyardTransform);
+        if (card.type == CardDefs.Type.Standard)
+        {
+            MoveCard(card, fromZone, graveyard, graveyardTransform);
+            Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} sent [{card.name}] to graveyard");
+        }
+        else
+        {
+            DiscardCard(card, isPlayer);
+        }
+    }
 
-        Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} sent [{card.name}] to graveyard");
+    /// <summary>
+    /// Moves all cards on a row to the graveyard (at the end of a round)
+    /// </summary>
+    public void MoveRowToGraveyard(List<CardData> row, bool isPlayer)
+    {
+        // Make a copy so we can safely modify while iterating
+        var cards = new List<CardData>(row);
+        foreach (var card in cards)
+            AddCardToGraveyard(card, isPlayer);
+    }
+
+    /// <summary>
+    /// Completely removes a card from all zones and destroys its UI.
+    /// </summary>
+    private void DiscardCard(CardData card, bool isPlayer)
+    {
+        if (card == null) return;
+
+        // Remove from any zone it's in
+        List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
+        fromZone?.Remove(card);
+
+        // Destroy its UI if it exists
+        if (cardUIMap.TryGetValue(card, out var cardUI))
+        {
+            if (cardUI != null)
+                UnityEngine.Object.Destroy(cardUI.gameObject);
+
+            cardUIMap.Remove(card);
+        }
+
+        Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} discarded [{card.name}]");
     }
 
     /// <summary>
@@ -177,7 +218,7 @@ public class CardZoneManager
                 return isPlayer ? board.PlayerSiegeRow : board.OpponentSiegeRow;
             default:
                 // Fallback if data is missing or invalid
-                Debug.LogWarning($"[BoardManager] Unknown range '{range}' for card '[{card.name}]' — defaulting to melee row.");
+                Debug.LogWarning($"[BoardManager] Unknown range '{range}' for card [{card.name}] — defaulting to melee row.");
                 return isPlayer ? board.PlayerMeleeRow : board.OpponentMeleeRow;
         }
     }

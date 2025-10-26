@@ -1,7 +1,8 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Controls gameplay setup and flow.
@@ -15,6 +16,10 @@ public class BoardManager : Singleton<BoardManager>
     [Header("Containers")]
     public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerDeckContainer, PlayerGraveyardContainer;
     public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentDeckContainer, OpponentGraveyardContainer;
+
+    [Header("General UI")]
+    public Button PassButton;
+    public Button QuitButton;
 
     [Header("References")]
     public BoardUI boardUI;
@@ -34,12 +39,13 @@ public class BoardManager : Singleton<BoardManager>
     private bool leaderCardsEnabled = true;
     private bool factionAbilityEnabled = true;
 
-    // Check if player has acted their turn
+    // Game variables
     private bool playerHasActed = false;
 
     // Time/Delay values
-    private float turnDelay = 1f;
-    private float aiThinkingTime = 1f;
+    private readonly float turnDelay = 1f;
+    private readonly float roundDelay = 2f;
+    private readonly float aiThinkingTime = 1f;
 
     void Start()
     {
@@ -49,6 +55,8 @@ public class BoardManager : Singleton<BoardManager>
         state = new BoardState();
         zoneManager = new CardZoneManager(state, this, cardUIMap);
         aiOpponent = new AIOpponent(state, this);
+
+        InitialiseGeneralButtons();
 
         // Start the game loop
         StartCoroutine(GameLoop());
@@ -80,21 +88,13 @@ public class BoardManager : Singleton<BoardManager>
                     break;
 
                 case GamePhase.PlayerTurn:
-                    state.IsPlayerTurn = true;
-                    state.PlayerCanAct = true;
-                    playerHasActed = false;
-                    UpdateBoardUI();
                     yield return WaitForPlayerAction(); // Wait for card play or pass
-                    state.PlayerCanAct = false;
-                    SetGamePhase(GamePhase.OpponentTurn);
+                    DetermineNextGamePhase();
                     break;
 
                 case GamePhase.OpponentTurn:
-                    state.IsPlayerTurn = false;
-                    state.PlayerCanAct = false;
-                    UpdateBoardUI();
                     yield return WaitForOpponentAction(); // Wait for card play or pass
-                    SetGamePhase(GamePhase.PlayerTurn);
+                    DetermineNextGamePhase();
                     break;
 
                 case GamePhase.ResolvingCard:
@@ -103,20 +103,16 @@ public class BoardManager : Singleton<BoardManager>
                     break;
 
                 case GamePhase.RoundStart:
-                    state.IsRoundOver = false;
-                    UpdateBoardUI();
                     yield return HandleRoundStart(); // Handle start of round
                     break;
 
                 case GamePhase.RoundEnd:
-                    state.IsRoundOver = true;
-                    UpdateBoardUI();
                     yield return HandleRoundEnd(); // Handle end of round
                     break;
 
                 case GamePhase.GameOver:
-                    HandleGameEnd(); // Handle game over
-                    yield break;
+                    yield return HandleGameEnd(); // Handle game over
+                    break;
             }
 
             yield return null; // Wait one frame
@@ -134,7 +130,22 @@ public class BoardManager : Singleton<BoardManager>
 
     private void DetermineNextGamePhase()
     {
-        SetGamePhase(state.IsPlayerTurn ? GamePhase.PlayerTurn : GamePhase.OpponentTurn);
+        if (state.PlayerHasPassed && state.OpponentHasPassed)
+        {
+            SetGamePhase(GamePhase.RoundEnd);
+        }
+        else if (state.PlayerHasPassed)
+        {
+            SetGamePhase(GamePhase.OpponentTurn);
+        }
+        else if (state.OpponentHasPassed)
+        {
+            SetGamePhase(GamePhase.PlayerTurn);
+        }
+        else
+        {
+            SetGamePhase(state.IsPlayerTurn ? GamePhase.OpponentTurn : GamePhase.PlayerTurn);
+        }
     }
 
     private IEnumerator HandleGameSetup()
@@ -157,17 +168,32 @@ public class BoardManager : Singleton<BoardManager>
 
     private IEnumerator WaitForPlayerAction()
     {
+        if (state.PlayerHasPassed) yield break;
+
         Debug.Log($"[BoardManager] Player's turn...");
+
+        state.IsPlayerTurn = true;
+        state.PlayerCanAct = true;
+        playerHasActed = false;
+        UpdateBoardUI();
 
         while (!playerHasActed)
             yield return null; // Wait one frame
+
+        state.PlayerCanAct = false;
 
         yield return new WaitForSeconds(turnDelay);
     }
 
     private IEnumerator WaitForOpponentAction()
     {
+        if (state.OpponentHasPassed) yield break;
+
         Debug.Log($"[BoardManager] Opponent's turn...");
+
+        state.IsPlayerTurn = false;
+        state.PlayerCanAct = false;
+        UpdateBoardUI();
 
         yield return new WaitForSeconds(aiThinkingTime);
 
@@ -188,9 +214,29 @@ public class BoardManager : Singleton<BoardManager>
     {
         Debug.Log($"[BoardManager] Round started.");
 
-        // Decide who starts first
-        state.IsPlayerTurn = RandomUtils.GetRandom(0, 1) == 1;
+        state.PlayerHasPassed = false;
+        state.OpponentHasPassed = false;
+
+        // Move all cards on both sides to graveyards
+        zoneManager.MoveRowToGraveyard(state.playerMelee, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.playerRanged, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.playerSiege, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.opponentMelee, isPlayer: false);
+        zoneManager.MoveRowToGraveyard(state.opponentRanged, isPlayer: false);
+        zoneManager.MoveRowToGraveyard(state.opponentSiege, isPlayer: false);
+
+        UpdateBoardUI();
+
+        yield return new WaitForSeconds(roundDelay);
+
+        // Decide who starts
+        if (state.PlayerLife == 2 && state.OpponentLife == 2)
+            state.IsPlayerTurn = RandomUtils.GetRandom(0, 1) == 1;
+        else
+            state.IsPlayerTurn = !state.IsPlayerTurn;
+
         SetGamePhase(state.IsPlayerTurn ? GamePhase.PlayerTurn : GamePhase.OpponentTurn);
+
         yield break;
     }
 
@@ -198,19 +244,64 @@ public class BoardManager : Singleton<BoardManager>
     {
         Debug.Log($"[BoardManager] Round ended.");
 
+        state.IsRoundOver = true;
+
+        int playerScore = state.GetPlayerTotalScore();
+        int opponentScore = state.GetOpponentTotalScore();
+
+        if (playerScore > opponentScore)
+        {
+            state.OpponentLife--;
+            Debug.Log("[BoardManager] Player wins the round!");
+        }
+        else if (playerScore < opponentScore)
+        {
+            state.PlayerLife--;
+            Debug.Log("[BoardManager] Opponent wins the round!");
+        }
+        else
+        {
+            state.PlayerLife--;
+            state.OpponentLife--;
+            Debug.Log("[BoardManager] It's a draw!");
+        }
+
+        UpdateBoardUI();
+
+        yield return new WaitForSeconds(roundDelay);
+
         if (state.PlayerLife == 0 || state.OpponentLife == 0)
             SetGamePhase(GamePhase.GameOver);
         else
             SetGamePhase(GamePhase.RoundStart);
+
         yield break;
     }
 
-    private void HandleGameEnd()
+    private IEnumerator HandleGameEnd()
     {
         Debug.Log($"[BoardManager] Game ended.");
 
         state.IsGameOver = true;
-        GameManager.Instance.ChangeState(GameState.MainMenu);
+
+        if (state.PlayerLife == 0 && state.OpponentLife == 0)
+        {
+            Debug.Log("[BoardManager] The game ends in a draw!");
+        }
+        else if (state.OpponentLife == 0)
+        {
+            Debug.Log("[BoardManager] Player wins the game!");
+        }
+        else
+        {
+            Debug.Log("[BoardManager] Opponent wins the game!");
+        }
+
+        yield return new WaitForSeconds(roundDelay);
+
+        QuitGame();
+
+        yield break;
     }
 
     // -------------------------
@@ -253,7 +344,14 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     private void StartGame()
     {
-        // Set starting lives
+        // Set default states
+        state.PlayerCanAct = false;
+        state.IsCardResolving = false;
+        state.IsPlayerTurn = false;
+        state.PlayerHasPassed = false;
+        state.OpponentHasPassed = false;
+        state.IsRoundOver = false;
+        state.IsGameOver = false;
         state.PlayerLife = 2;
         state.OpponentLife = 2;
 
@@ -383,6 +481,60 @@ public class BoardManager : Singleton<BoardManager>
     }
 
     // -------------------------
+    // Input Handlers
+    // -------------------------
+
+    /// <summary>
+    /// Check for key inputs
+    /// </summary>
+    void Update()
+    {
+        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            PassRound(isPlayer: true);
+        }
+        else if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ForfeitGame();
+        }
+    }
+
+    /// <summary>
+    /// Sets up general buttons listeners
+    /// </summary>
+    public void InitialiseGeneralButtons()
+    {
+        PassButton.onClick.AddListener(() => PassRound(isPlayer: true));
+        QuitButton.onClick.AddListener(ForfeitGame);
+    }
+
+    // -------------------------
+    // Pass Handler
+    // -------------------------
+
+    /// <summary>
+    /// End turn and pass the current round
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public void PassRound(bool isPlayer)
+    {
+        if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn)
+        {
+            Debug.Log("[BoardManager] Player has passed.");
+            state.PlayerHasPassed = true;
+            playerHasActed = true;
+            state.PlayerCanAct = false;
+            UpdateBoardUI();
+        }
+        else if (!isPlayer && !state.OpponentHasPassed && state.CurrentPhase == GamePhase.OpponentTurn)
+        {
+            Debug.Log("[BoardManager] Opponent has passed.");
+            state.OpponentHasPassed = true;
+            UpdateBoardUI();
+        }
+    }
+
+    // -------------------------
     // Update Board UI
     // -------------------------
 
@@ -392,5 +544,73 @@ public class BoardManager : Singleton<BoardManager>
     public void UpdateBoardUI()
     {
         boardUI.UpdateUI(state);
+    }
+
+    // -------------------------
+    // Quit Game
+    // -------------------------
+
+    /// <summary>
+    /// Player clicks the exit button
+    /// </summary>
+    private void ForfeitGame()
+    {
+        if (ConfirmationWindow.Instance.isVisible) return;
+
+        ConfirmationWindow.Instance.Show(
+            "Forfeit",
+            "Do you want to forfeit?",
+            () => {
+                Debug.Log("[BoardManager] Player has forfeited.");
+                QuitGame();
+            }
+        );
+    }
+
+    /// <summary>
+    /// End the game and display the main menu
+    /// </summary>
+    private void QuitGame()
+    {
+        StopAllCoroutines();
+        CleanupBoard();
+        GameManager.Instance.ChangeState(GameState.MainMenu);
+    }
+
+    /// <summary>
+    /// Cleans the board before exiting
+    /// </summary>
+    public void CleanupBoard()
+    {
+        // Unsubscribe all card click events
+        foreach (var kvp in cardUIMap)
+        {
+            var cardUI = kvp.Value;
+            if (cardUI != null)
+                cardUI.OnCardClicked -= HandleCardClicked;
+        }
+
+        // Destroy all card GameObjects
+        foreach (var kvp in cardUIMap)
+        {
+            if (kvp.Value != null)
+                Destroy(kvp.Value.gameObject);
+        }
+
+        cardUIMap.Clear();
+
+        // Clear state zones
+        state.playerDeck.Clear();
+        state.opponentDeck.Clear();
+        state.playerHand.Clear();
+        state.opponentHand.Clear();
+        state.playerMelee.Clear();
+        state.playerRanged.Clear();
+        state.playerSiege.Clear();
+        state.opponentMelee.Clear();
+        state.opponentRanged.Clear();
+        state.opponentSiege.Clear();
+        state.playerGraveyard.Clear();
+        state.opponentGraveyard.Clear();
     }
 }
