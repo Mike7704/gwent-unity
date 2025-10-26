@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using TMPro;
-using UnityEngine.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Handles updating of board UI — scores, names, and deck/hand counts.
@@ -40,6 +41,11 @@ public class BoardUI : MonoBehaviour
     [Header("Life Sprites")]
     public Sprite FullLifeSprite;
     public Sprite LostLifeSprite;
+
+    [Header("Banner")]
+    public Image BannerImage;
+    public TextMeshProUGUI BannerMessage;
+    public Sprite[] BannerSprites;
 
     /// <summary>
     /// Updates all score and hand/deck counts based on current state.
@@ -108,4 +114,36 @@ public class BoardUI : MonoBehaviour
         OpponentName.text = opponentName;
         OpponentFaction.text = opponentFaction;
     }
+
+    /// <summary>
+    /// Displays a banner with a message
+    /// </summary>
+    public void ShowBanner(Banner banner, string message)
+    {
+        BannerImage.enabled = true;
+        BannerMessage.text = message;
+        BannerImage.sprite = BannerSprites[(int)banner];
+    }
+    public void HideBanner()
+    {
+        BannerImage.enabled = false;
+        BannerMessage.text = "";
+    }
+}
+
+public enum Banner
+{
+    CoinPlayer,
+    CoinOpponent,
+    PlayerTurn,
+    OpponentTurn,
+    RoundPassed,
+    RoundWin,
+    RoundDraw,
+    RoundLoss,
+    NorthernRealms,
+    Nilfgaard,
+    Scoiatael,
+    Monsters,
+    Skellige
 }

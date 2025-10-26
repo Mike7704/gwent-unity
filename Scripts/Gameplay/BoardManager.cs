@@ -150,7 +150,7 @@ public class BoardManager : Singleton<BoardManager>
 
     private IEnumerator HandleGameSetup()
     {
-        Debug.Log($"[BoardManager] Setting up the game...");
+        Debug.Log($"[BoardManager] Setting up the board...");
 
         SetupGameSettings();
         SetupBoardUI();
@@ -162,7 +162,9 @@ public class BoardManager : Singleton<BoardManager>
     {
         Debug.Log($"[BoardManager] Waiting for hand redraw...");
 
-        // Redraw logic
+        boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw: {"cardsRedrawn"}/2 [SKIP]");
+        yield return new WaitForSeconds(1f);
+
         yield break;
     }
 
@@ -175,6 +177,7 @@ public class BoardManager : Singleton<BoardManager>
         state.IsPlayerTurn = true;
         state.PlayerCanAct = true;
         playerHasActed = false;
+        boardUI.HideBanner();
         UpdateBoardUI();
 
         while (!playerHasActed)
@@ -183,6 +186,8 @@ public class BoardManager : Singleton<BoardManager>
         state.PlayerCanAct = false;
 
         yield return new WaitForSeconds(turnDelay);
+
+        yield break;
     }
 
     private IEnumerator WaitForOpponentAction()
@@ -193,6 +198,7 @@ public class BoardManager : Singleton<BoardManager>
 
         state.IsPlayerTurn = false;
         state.PlayerCanAct = false;
+        boardUI.HideBanner();
         UpdateBoardUI();
 
         yield return new WaitForSeconds(aiThinkingTime);
@@ -200,6 +206,8 @@ public class BoardManager : Singleton<BoardManager>
         yield return StartCoroutine(aiOpponent.PlayTurn());
 
         yield return new WaitForSeconds(turnDelay);
+
+        yield break;
     }
 
     private IEnumerator WaitForCardResolve()
@@ -227,13 +235,31 @@ public class BoardManager : Singleton<BoardManager>
 
         UpdateBoardUI();
 
-        yield return new WaitForSeconds(roundDelay);
-
         // Decide who starts
         if (state.PlayerLife == 2 && state.OpponentLife == 2)
+        {
+            // Coin toss
+            yield return new WaitForSeconds(roundDelay);
+
             state.IsPlayerTurn = RandomUtils.GetRandom(0, 1) == 1;
+            if (state.IsPlayerTurn)
+                boardUI.ShowBanner(Banner.CoinPlayer, "You will go first");
+            else
+                boardUI.ShowBanner(Banner.CoinOpponent, "Your opponent will go first");
+        }
         else
+        {
+            boardUI.ShowBanner(Banner.PlayerTurn, "Starting the next round...");
+            yield return new WaitForSeconds(roundDelay);
+
             state.IsPlayerTurn = !state.IsPlayerTurn;
+            if (state.IsPlayerTurn)
+                boardUI.ShowBanner(Banner.PlayerTurn, "Your turn");
+            else
+                boardUI.ShowBanner(Banner.OpponentTurn, "Opponent's turn");
+        }
+
+        yield return new WaitForSeconds(roundDelay);
 
         SetGamePhase(state.IsPlayerTurn ? GamePhase.PlayerTurn : GamePhase.OpponentTurn);
 
@@ -251,19 +277,22 @@ public class BoardManager : Singleton<BoardManager>
 
         if (playerScore > opponentScore)
         {
-            state.OpponentLife--;
             Debug.Log("[BoardManager] Player wins the round!");
+            state.OpponentLife--;
+            boardUI.ShowBanner(Banner.RoundWin, "You won the round");
         }
         else if (playerScore < opponentScore)
         {
-            state.PlayerLife--;
             Debug.Log("[BoardManager] Opponent wins the round!");
+            state.PlayerLife--;
+            boardUI.ShowBanner(Banner.RoundLoss, "You lost the round");
         }
         else
         {
+            Debug.Log("[BoardManager] It's a draw!");
             state.PlayerLife--;
             state.OpponentLife--;
-            Debug.Log("[BoardManager] It's a draw!");
+            boardUI.ShowBanner(Banner.RoundDraw, "You drew the round");
         }
 
         UpdateBoardUI();
@@ -287,14 +316,17 @@ public class BoardManager : Singleton<BoardManager>
         if (state.PlayerLife == 0 && state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] The game ends in a draw!");
+            boardUI.ShowBanner(Banner.RoundDraw, "You drew the game");
         }
         else if (state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] Player wins the game!");
+            boardUI.ShowBanner(Banner.RoundWin, "You won the game");
         }
         else
         {
             Debug.Log("[BoardManager] Opponent wins the game!");
+            boardUI.ShowBanner(Banner.RoundLoss, "You lost the game");
         }
 
         yield return new WaitForSeconds(roundDelay);
@@ -363,6 +395,7 @@ public class BoardManager : Singleton<BoardManager>
         DrawInitialHand(state.playerDeck, isPlayer: true);
         DrawInitialHand(state.opponentDeck, isPlayer: false);
 
+        boardUI.HideBanner();
         UpdateBoardUI();
     }
 
@@ -524,12 +557,14 @@ public class BoardManager : Singleton<BoardManager>
             state.PlayerHasPassed = true;
             playerHasActed = true;
             state.PlayerCanAct = false;
+            boardUI.ShowBanner(Banner.RoundPassed, "You passed");
             UpdateBoardUI();
         }
         else if (!isPlayer && !state.OpponentHasPassed && state.CurrentPhase == GamePhase.OpponentTurn)
         {
             Debug.Log("[BoardManager] Opponent has passed.");
             state.OpponentHasPassed = true;
+            boardUI.ShowBanner(Banner.RoundPassed, "Your opponent has passed");
             UpdateBoardUI();
         }
     }
