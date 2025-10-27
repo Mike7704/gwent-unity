@@ -21,6 +21,10 @@ public class BoardState
     public List<int> PlayerRoundScores { get; private set; } = new();
     public List<int> OpponentRoundScores { get; private set; } = new();
 
+    // Player and Opponent summon card decks
+    public List<CardData> playerSummonDeck = new();
+    public List<CardData> opponentSummonDeck = new();
+
     // Player and Opponent decks
     public List<CardData> playerDeck = new();
     public List<CardData> opponentDeck = new();

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -72,7 +73,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.DrawEnemyDiscard:
-                // Ability
+                yield return HandleSpy(isPlayer);
                 break;
 
             case CardDefs.Ability.Horn:
@@ -96,11 +97,11 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Muster:
-                // Ability
+                yield return HandleMuster(card, isPlayer, isMusterPlus:false);
                 break;
 
             case CardDefs.Ability.MusterPlus:
-                // Ability
+                yield return HandleMuster(card, isPlayer, isMusterPlus:true);
                 break;
 
             case CardDefs.Ability.Scorch:
@@ -125,11 +126,13 @@ public class AbilityManager
     /// </summary>
     private IEnumerator HandleSpy(bool isPlayer)
     {
+        List<CardData> targetDeck = isPlayer ? state.playerDeck : state.opponentDeck;
+
+        if (targetDeck.Count == 0) yield break;
+
         yield return new WaitForSeconds(abilityTriggerDelay);
 
         AudioSystem.Instance.PlaySFX(SFX.CardSpy);
-
-        List<CardData> targetDeck = isPlayer ? state.playerDeck : state.opponentDeck;
 
         for (int i = 0; i < boardManager.spyDrawAmount; i++)
         {
@@ -140,6 +143,82 @@ public class AbilityManager
                 zoneManager.AddCardToHand(cardToDraw, isPlayer);
             }
         }
+    }
+
+    /// <summary>
+    /// Muster ability: Summons all targeted cards from the hand and deck (or summon deck if muster plus) to the board.
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    private IEnumerator HandleMuster(CardData card, bool isPlayer, bool isMusterPlus)
+    {
+        if (card.target == null || card.target.Count == 0)
+        {
+            Debug.LogWarning($"[AbilityManager] Muster ability triggered but no targets defined for [{card.name}]");
+            yield break;
+        }
+
+        // Find all valid muster targets
+        List<CardData> cardsToSummon = FindCardsByTargetIDs(card.target, isPlayer, isMusterPlus);
+
+        if (cardsToSummon.Count == 0) yield break;
+
+        yield return new WaitForSeconds(abilityTriggerDelay);
+
+        AudioSystem.Instance.PlaySFX(SFX.CardSummon);
+
+        // Summon each card
+        foreach (var summonCard in cardsToSummon)
+        {
+            zoneManager.AddCardToBoard(summonCard, isPlayer);
+            yield return new WaitForSeconds(0.3f);
+        }
+
+    }
+
+    /// <summary>
+    /// Returns cards based on target IDs for abilities like Muster.
+    /// </summary>
+    /// <param name="targets"></param>
+    /// <param name="isPlayer"></param>
+    /// <returns></returns>
+    private List<CardData> FindCardsByTargetIDs(List<CardTarget> targets, bool isPlayer, bool searchSummonDeck)
+    {
+        List<CardData> result = new List<CardData>();
+
+        if (searchSummonDeck)
+        {
+            // Search only the summon deck for each target ID
+            List<CardData> summonDeck = isPlayer ? state.playerSummonDeck : state.opponentSummonDeck;
+
+            foreach (var target in targets)
+            {
+                // Player summon cards
+                result.AddRange(summonDeck.Where(c => c.id == target.id));
+
+                // Opponent summon cards (with 1000 offset)
+                result.AddRange(summonDeck.Where(c => c.id - 1000 == target.id));
+            }
+        }
+        else
+        {
+            // Search hand and deck for each target ID
+            List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
+            List<CardData> hand = isPlayer ? state.playerHand : state.opponentHand;
+
+            foreach (var target in targets)
+            {
+                // Player cards
+                result.AddRange(hand.Where(c => c.id == target.id));
+                result.AddRange(deck.Where(c => c.id == target.id));
+
+                // Opponent cards (with 1000 offset)
+                result.AddRange(hand.Where(c => c.id - 1000 == target.id));
+                result.AddRange(deck.Where(c => c.id - 1000 == target.id));
+            }
+        }
+
+        // Remove any duplicates
+        return result.Distinct().ToList();
     }
 
 }

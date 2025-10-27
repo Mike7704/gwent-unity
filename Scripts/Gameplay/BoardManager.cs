@@ -14,8 +14,8 @@ public class BoardManager : Singleton<BoardManager>
     public Transform OpponentHandRow, OpponentMeleeRow, OpponentRangedRow, OpponentSiegeRow;
 
     [Header("Containers")]
-    public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerDeckContainer, PlayerGraveyardContainer;
-    public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentDeckContainer, OpponentGraveyardContainer;
+    public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerSummonDeckContainer, PlayerDeckContainer, PlayerGraveyardContainer;
+    public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer;
 
     [Header("General UI")]
     public Button PassButton;
@@ -39,6 +39,12 @@ public class BoardManager : Singleton<BoardManager>
     public int spyDrawAmount = 2;
     public bool leaderCardsEnabled = true;
     public bool factionAbilityEnabled = true;
+
+    // Player and Opponent info
+    public string playerUsername;
+    public string opponentUsername;
+    public string playerFaction;
+    public string opponentFaction;
 
     // Game variables
     private bool playerHasActed = false;
@@ -377,11 +383,12 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     private void SetupBoardUI()
     {
-        boardUI.SetupPlayersInfo(
-            ProfileManager.Instance.Username,
-            DeckManager.Instance.PlayerFaction,
-            "Opponent",
-            DeckManager.Instance.NPCFaction);
+        playerUsername = ProfileManager.Instance.Username;
+        opponentUsername = "Opponent";
+        playerFaction = DeckManager.Instance.PlayerFaction;
+        opponentFaction = DeckManager.Instance.NPCFaction;
+
+        boardUI.SetupPlayersInfo(playerUsername, playerFaction, opponentUsername, opponentFaction);
     }
 
     /// <summary>
@@ -400,6 +407,10 @@ public class BoardManager : Singleton<BoardManager>
         state.PlayerLife = 2;
         state.OpponentLife = 2;
 
+        // Create a summon deck for both players
+        CreateSummonDeck(CardDatabase.Instance.summonCards, PlayerSummonDeckContainer, isPlayer: true);
+        CreateSummonDeck(CardDatabase.Instance.summonCards, OpponentSummonDeckContainer, isPlayer: false);
+
         // Create both decks from DeckManager
         CreateDeck(DeckManager.Instance.PlayerDeck, PlayerDeckContainer, isPlayer: true);
         CreateDeck(DeckManager.Instance.NPCDeck, OpponentDeckContainer, isPlayer: false);
@@ -414,10 +425,49 @@ public class BoardManager : Singleton<BoardManager>
     }
 
     /// <summary>
+    /// Generates a deck of cards that can be summoned and creates cardUI with mapping.
+    /// </summary>
+    /// <param name="sourceDeck"></param>
+    /// <param name="summonContainer"></param>
+    /// <param name="isPlayer"></param>
+    private void CreateSummonDeck(List<CardData> sourceDeck, Transform summonContainer, bool isPlayer)
+    {
+        List<CardData> copiedDeck = new List<CardData>();
+
+        foreach (var originalCard in sourceDeck)
+        {
+            // Only include neutral cards and cards matching the faction
+            if (originalCard.faction != CardDefs.Faction.Neutral &&
+                ((isPlayer && originalCard.faction != playerFaction) ||
+                 (!isPlayer && originalCard.faction != opponentFaction)))
+            {
+                continue;
+            }
+
+            // Deep clone so each card is unique
+            CardData newCard = originalCard.Clone();
+            if (!isPlayer)
+                newCard.id += 1000; // Offset opponent card IDs to avoid clashes
+            copiedDeck.Add(newCard);
+
+            // Create hidden UI
+            CardUI cardUI = CardManager.Instance.CreateCard(newCard, cropped: true, summonContainer);
+            cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
+            cardUIMap[newCard] = cardUI;
+            SetupCardInteraction(cardUI);
+        }
+
+        if (isPlayer)
+            state.playerSummonDeck = copiedDeck;
+        else
+            state.opponentSummonDeck = copiedDeck;
+    }
+
+    /// <summary>
     /// Generates a deck from DeckManager and creates cardUI with mapping.
     /// </summary>
     /// <param name="sourceDeck"></param>
-    /// <param name="handRow"></param>
+    /// <param name="deckContainer"></param>
     /// <param name="isPlayer"></param>
     private void CreateDeck(List<CardData> sourceDeck, Transform deckContainer, bool isPlayer)
     {
@@ -660,6 +710,8 @@ public class BoardManager : Singleton<BoardManager>
         cardUIMap.Clear();
 
         // Clear state zones
+        state.playerSummonDeck.Clear();
+        state.opponentSummonDeck.Clear();
         state.playerDeck.Clear();
         state.opponentDeck.Clear();
         state.playerHand.Clear();

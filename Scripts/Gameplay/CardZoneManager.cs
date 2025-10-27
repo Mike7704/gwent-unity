@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -266,6 +265,7 @@ public class CardZoneManager
             if (state.playerMelee.Contains(card)) return state.playerMelee;
             if (state.playerRanged.Contains(card)) return state.playerRanged;
             if (state.playerSiege.Contains(card)) return state.playerSiege;
+            if (state.playerSummonDeck.Contains(card)) return state.playerSummonDeck;
         }
         else
         {
@@ -275,6 +275,7 @@ public class CardZoneManager
             if (state.opponentMelee.Contains(card)) return state.opponentMelee;
             if (state.opponentRanged.Contains(card)) return state.opponentRanged;
             if (state.opponentSiege.Contains(card)) return state.opponentSiege;
+            if (state.opponentSummonDeck.Contains(card)) return state.opponentSummonDeck;
         }
 
         Debug.LogWarning($"[CardZoneManager] Could not find card [{card.name}] in any zone.");

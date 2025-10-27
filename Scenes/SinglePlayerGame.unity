@@ -1483,6 +1483,41 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &303216182
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 303216183}
+  m_Layer: 0
+  m_Name: PlayerSummonDeckContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &303216183
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 303216182}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1319619276}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 866, y: -238}
+  m_SizeDelta: {x: 103.517, y: 150}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &305266141
 GameObject:
   m_ObjectHideFlags: 0
@@ -1537,15 +1572,24 @@ MonoBehaviour:
   OpponentSiegeRow: {fileID: 171157627}
   PlayerLeaderContainer: {fileID: 1345744627}
   PlayerRecentCardContainer: {fileID: 1783387400}
+  PlayerSummonDeckContainer: {fileID: 303216183}
   PlayerDeckContainer: {fileID: 1150210021}
   PlayerGraveyardContainer: {fileID: 612843791}
   OpponentLeaderContainer: {fileID: 804431435}
   OpponentRecentCardContainer: {fileID: 1310465549}
+  OpponentSummonDeckContainer: {fileID: 1013436597}
   OpponentDeckContainer: {fileID: 1981787175}
   OpponentGraveyardContainer: {fileID: 1228221338}
   PassButton: {fileID: 397133570}
   QuitButton: {fileID: 127677627}
   boardUI: {fileID: 430177252}
+  spyDrawAmount: 2
+  leaderCardsEnabled: 1
+  factionAbilityEnabled: 1
+  playerUsername: 
+  opponentUsername: 
+  playerFaction: 
+  opponentFaction: 
 --- !u!1 &381613611
 GameObject:
   m_ObjectHideFlags: 0
@@ -3901,6 +3945,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &1013436596
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1013436597}
+  m_Layer: 0
+  m_Name: OpponentSummonDeckContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1013436597
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1013436596}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1541821820}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 866, y: -17}
+  m_SizeDelta: {x: 103.517, y: 150}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &1049356417
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5146,6 +5225,7 @@ RectTransform:
   m_Children:
   - {fileID: 1345744627}
   - {fileID: 1783387400}
+  - {fileID: 303216183}
   - {fileID: 1150210021}
   - {fileID: 612843791}
   m_Father: {fileID: 2029950081}
@@ -5591,6 +5671,7 @@ RectTransform:
   m_Children:
   - {fileID: 804431435}
   - {fileID: 1310465549}
+  - {fileID: 1013436597}
   - {fileID: 1981787175}
   - {fileID: 1228221338}
   m_Father: {fileID: 2029950081}
