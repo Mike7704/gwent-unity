@@ -26,6 +26,7 @@ public class BoardManager : Singleton<BoardManager>
 
     private BoardState state;
     private CardZoneManager zoneManager;
+    private AbilityManager abilityManager;
     private AIOpponent aiOpponent;
 
     // Mapping of CardData to CardUI for easy access
@@ -35,16 +36,20 @@ public class BoardManager : Singleton<BoardManager>
     private int initialHandSize = 10;
     private bool randomisePlayerDeck = false;
     private int randomiseDeckSize = 25;
-    private int spyDrawAmount = 2;
-    private bool leaderCardsEnabled = true;
-    private bool factionAbilityEnabled = true;
+    public int spyDrawAmount = 2;
+    public bool leaderCardsEnabled = true;
+    public bool factionAbilityEnabled = true;
 
     // Game variables
     private bool playerHasActed = false;
 
+    // Track last played card
+    private CardData lastPlayedCard;
+    private bool lastPlayedByPlayer;
+
     // Time/Delay values
-    private readonly float turnDelay = 1f;
-    private readonly float roundDelay = 2f;
+    private readonly float turnDelay = 1.5f;
+    private readonly float roundDelay = 2.5f;
     private readonly float aiThinkingTime = 1f;
 
     void Start()
@@ -54,6 +59,7 @@ public class BoardManager : Singleton<BoardManager>
         cardUIMap.Clear(); // Make sure the mapping is clear
         state = new BoardState();
         zoneManager = new CardZoneManager(state, this, cardUIMap);
+        abilityManager = new AbilityManager(state, this, zoneManager);
         aiOpponent = new AIOpponent(state, this);
 
         InitialiseGeneralButtons();
@@ -78,28 +84,23 @@ public class BoardManager : Singleton<BoardManager>
             switch (state.CurrentPhase)
             {
                 case GamePhase.Start:
-                    yield return HandleGameSetup(); // Initial game setup
-                    SetGamePhase(GamePhase.RedrawHand);
+                    HandleGameSetup(); // Initial game setup
                     break;
 
                 case GamePhase.RedrawHand:
                     yield return HandleRedrawHand(); // Redraw from hand at start of game
-                    SetGamePhase(GamePhase.RoundStart);
                     break;
 
                 case GamePhase.PlayerTurn:
                     yield return WaitForPlayerAction(); // Wait for card play or pass
-                    DetermineNextGamePhase();
                     break;
 
                 case GamePhase.OpponentTurn:
                     yield return WaitForOpponentAction(); // Wait for card play or pass
-                    DetermineNextGamePhase();
                     break;
 
                 case GamePhase.ResolvingCard:
                     yield return WaitForCardResolve(); // Wait for card ability
-                    DetermineNextGamePhase();
                     break;
 
                 case GamePhase.RoundStart:
@@ -111,7 +112,7 @@ public class BoardManager : Singleton<BoardManager>
                     break;
 
                 case GamePhase.GameOver:
-                    yield return HandleGameEnd(); // Handle game over
+                    HandleGameEnd(); // Handle game over
                     break;
             }
 
@@ -128,8 +129,10 @@ public class BoardManager : Singleton<BoardManager>
         state.CurrentPhase = phase;
     }
 
-    private void DetermineNextGamePhase()
+    private IEnumerator TransitionToNextGamePhase()
     {
+        yield return new WaitForSeconds(turnDelay);
+
         if (state.PlayerHasPassed && state.OpponentHasPassed)
         {
             SetGamePhase(GamePhase.RoundEnd);
@@ -148,14 +151,15 @@ public class BoardManager : Singleton<BoardManager>
         }
     }
 
-    private IEnumerator HandleGameSetup()
+    private void HandleGameSetup()
     {
         Debug.Log($"[BoardManager] Setting up the board...");
 
         SetupGameSettings();
         SetupBoardUI();
         StartGame();
-        yield break; 
+
+        SetGamePhase(GamePhase.RedrawHand);
     }
 
     private IEnumerator HandleRedrawHand()
@@ -165,7 +169,7 @@ public class BoardManager : Singleton<BoardManager>
         boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw: {"cardsRedrawn"}/2 [SKIP]");
         yield return new WaitForSeconds(1f);
 
-        yield break;
+        SetGamePhase(GamePhase.RoundStart);
     }
 
     private IEnumerator WaitForPlayerAction()
@@ -184,10 +188,6 @@ public class BoardManager : Singleton<BoardManager>
             yield return null; // Wait one frame
 
         state.PlayerCanAct = false;
-
-        yield return new WaitForSeconds(turnDelay);
-
-        yield break;
     }
 
     private IEnumerator WaitForOpponentAction()
@@ -204,18 +204,21 @@ public class BoardManager : Singleton<BoardManager>
         yield return new WaitForSeconds(aiThinkingTime);
 
         yield return StartCoroutine(aiOpponent.PlayTurn());
-
-        yield return new WaitForSeconds(turnDelay);
-
-        yield break;
     }
 
     private IEnumerator WaitForCardResolve()
     {
-        Debug.Log($"[BoardManager] Card resolving...");
+        if (lastPlayedCard != null)
+        {
+            // Resolve the last played card's ability
+            yield return StartCoroutine(abilityManager.ResolveCard(lastPlayedCard, lastPlayedByPlayer));
+        }
 
-        // Card ability logic
-        yield break;
+        UpdateBoardUI();
+
+        lastPlayedCard = null; // Clear the last played card
+
+        yield return StartCoroutine(TransitionToNextGamePhase());
     }
 
     private IEnumerator HandleRoundStart()
@@ -262,8 +265,6 @@ public class BoardManager : Singleton<BoardManager>
         yield return new WaitForSeconds(roundDelay);
 
         SetGamePhase(state.IsPlayerTurn ? GamePhase.PlayerTurn : GamePhase.OpponentTurn);
-
-        yield break;
     }
 
     private IEnumerator HandleRoundEnd()
@@ -304,11 +305,9 @@ public class BoardManager : Singleton<BoardManager>
             SetGamePhase(GamePhase.GameOver);
         else
             SetGamePhase(GamePhase.RoundStart);
-
-        yield break;
     }
 
-    private IEnumerator HandleGameEnd()
+    private void HandleGameEnd()
     {
         Debug.Log($"[BoardManager] Game ended.");
 
@@ -329,8 +328,6 @@ public class BoardManager : Singleton<BoardManager>
             Debug.Log("[BoardManager] Opponent wins the game!");
             boardUI.ShowEndScreen(EndScreen.Lose, this, state);
         }
-
-        yield break;
     }
 
     // -------------------------
@@ -469,6 +466,13 @@ public class BoardManager : Singleton<BoardManager>
 
         zoneManager.AddCardToBoard(cardData, isPlayer);
 
+        // Store which card was played
+        lastPlayedCard = cardData;
+        lastPlayedByPlayer = isPlayer;
+
+        // Do card ability
+        SetGamePhase(GamePhase.ResolvingCard);
+
         if (isPlayer)
             playerHasActed = true;
     }
@@ -557,6 +561,7 @@ public class BoardManager : Singleton<BoardManager>
             state.PlayerCanAct = false;
             boardUI.ShowBanner(Banner.RoundPassed, "You passed");
             UpdateBoardUI();
+            StartCoroutine(TransitionToNextGamePhase());
         }
         else if (!isPlayer && !state.OpponentHasPassed && state.CurrentPhase == GamePhase.OpponentTurn)
         {
@@ -564,6 +569,7 @@ public class BoardManager : Singleton<BoardManager>
             state.OpponentHasPassed = true;
             boardUI.ShowBanner(Banner.RoundPassed, "Your opponent has passed");
             UpdateBoardUI();
+            StartCoroutine(TransitionToNextGamePhase());
         }
     }
 

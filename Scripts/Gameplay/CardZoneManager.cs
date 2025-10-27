@@ -8,13 +8,13 @@ using UnityEngine;
 public class CardZoneManager
 {
     private readonly BoardState state;
-    private readonly BoardManager board;
+    private readonly BoardManager boardManager;
     private readonly Dictionary<CardData, CardUI> cardUIMap;
 
-    public CardZoneManager(BoardState state, BoardManager board, Dictionary<CardData, CardUI> cardUIMap)
+    public CardZoneManager(BoardState state, BoardManager boardManager, Dictionary<CardData, CardUI> cardUIMap)
     {
         this.state = state;
-        this.board = board;
+        this.boardManager = boardManager;
         this.cardUIMap = cardUIMap;
     }
 
@@ -68,14 +68,14 @@ public class CardZoneManager
     {
         Transform[] allRows =
         {
-            board.PlayerHandRow,
-            board.PlayerMeleeRow,
-            board.PlayerRangedRow,
-            board.PlayerSiegeRow,
-            board.OpponentHandRow,
-            board.OpponentMeleeRow,
-            board.OpponentRangedRow,
-            board.OpponentSiegeRow
+            boardManager.PlayerHandRow,
+            boardManager.PlayerMeleeRow,
+            boardManager.PlayerRangedRow,
+            boardManager.PlayerSiegeRow,
+            boardManager.OpponentHandRow,
+            boardManager.OpponentMeleeRow,
+            boardManager.OpponentRangedRow,
+            boardManager.OpponentSiegeRow
         };
 
         foreach (var row in allRows)
@@ -134,7 +134,7 @@ public class CardZoneManager
         // Determine which zone the card is coming from
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
         List<CardData> hand = isPlayer ? state.playerHand : state.opponentHand;
-        Transform handTransform = isPlayer ? board.PlayerHandRow : board.OpponentHandRow;
+        Transform handTransform = isPlayer ? boardManager.PlayerHandRow : boardManager.OpponentHandRow;
 
         MoveCard(card, fromZone, hand, handTransform);
 
@@ -149,7 +149,7 @@ public class CardZoneManager
         // Determine which zone the card is coming from
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
         List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
-        Transform graveyardTransform = isPlayer ? board.PlayerGraveyardContainer : board.OpponentGraveyardContainer;
+        Transform graveyardTransform = isPlayer ? boardManager.PlayerGraveyardContainer : boardManager.OpponentGraveyardContainer;
 
         if (card.type == CardDefs.Type.Standard)
         {
@@ -204,22 +204,23 @@ public class CardZoneManager
     /// <returns></returns>
     public Transform GetTargetRowContainer(CardData card, bool isPlayer)
     {
-        string range = card.range?.ToLower();
+        bool isSpy = card.ability == CardDefs.Ability.Spy;
+        bool addToPlayerRow = (isPlayer && !isSpy) || (!isPlayer && isSpy);
 
-        switch (range)
+        switch (card.range)
         {
             case CardDefs.Range.Melee:
-                return isPlayer ? board.PlayerMeleeRow : board.OpponentMeleeRow;
+                return addToPlayerRow ? boardManager.PlayerMeleeRow : boardManager.OpponentMeleeRow;
             case CardDefs.Range.Agile:
-                return isPlayer ? board.PlayerMeleeRow : board.OpponentMeleeRow; // Melee as default for Agile for now
+                return addToPlayerRow ? boardManager.PlayerMeleeRow : boardManager.OpponentMeleeRow; // Melee as default for Agile for now
             case CardDefs.Range.Ranged:
-                return isPlayer ? board.PlayerRangedRow : board.OpponentRangedRow;
+                return addToPlayerRow ? boardManager.PlayerRangedRow : boardManager.OpponentRangedRow;
             case CardDefs.Range.Siege:
-                return isPlayer ? board.PlayerSiegeRow : board.OpponentSiegeRow;
+                return addToPlayerRow ? boardManager.PlayerSiegeRow : boardManager.OpponentSiegeRow;
             default:
                 // Fallback if data is missing or invalid
-                Debug.LogWarning($"[BoardManager] Unknown range '{range}' for card [{card.name}] — defaulting to melee row.");
-                return isPlayer ? board.PlayerMeleeRow : board.OpponentMeleeRow;
+                Debug.LogWarning($"[BoardManager] Unknown range {card.range} for card [{card.name}] — defaulting to melee row.");
+                return addToPlayerRow ? boardManager.PlayerMeleeRow : boardManager.OpponentMeleeRow;
         }
     }
 
@@ -231,22 +232,23 @@ public class CardZoneManager
     /// <returns></returns>
     public List<CardData> GetTargetRowList(CardData card, bool isPlayer)
     {
-        string range = card.range?.ToLower();
+        bool isSpy = card.ability == CardDefs.Ability.Spy;
+        bool addToPlayerRow = (isPlayer && !isSpy) || (!isPlayer && isSpy);
 
-        switch (range)
+        switch (card.range)
         {
             case CardDefs.Range.Melee:
-                return isPlayer ? state.playerMelee : state.opponentMelee;
+                return addToPlayerRow ? state.playerMelee : state.opponentMelee;
             case CardDefs.Range.Agile:
-                return isPlayer ? state.playerMelee : state.opponentMelee; // Melee as default for Agile for now
+                return addToPlayerRow ? state.playerMelee : state.opponentMelee; // Melee as default for Agile for now
             case CardDefs.Range.Ranged:
-                return isPlayer ? state.playerRanged : state.opponentRanged;
+                return addToPlayerRow ? state.playerRanged : state.opponentRanged;
             case CardDefs.Range.Siege:
-                return isPlayer ? state.playerSiege : state.opponentSiege;
+                return addToPlayerRow ? state.playerSiege : state.opponentSiege;
             default:
                 // Fallback if data is missing or invalid
-                Debug.LogWarning($"[BoardManager] Unknown range '{range}' for card '[{card.name}]' — defaulting to melee row.");
-                return isPlayer ? state.playerMelee : state.opponentMelee;
+                Debug.LogWarning($"[BoardManager] Unknown range {card.range} for card [{card.name}] — defaulting to melee row.");
+                return addToPlayerRow ? state.playerMelee : state.opponentMelee;
         }
     }
 
