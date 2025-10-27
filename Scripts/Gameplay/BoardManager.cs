@@ -155,6 +155,8 @@ public class BoardManager : Singleton<BoardManager>
     {
         Debug.Log($"[BoardManager] Setting up the board...");
 
+        AudioSystem.Instance.PlaySFX(SFX.StartGame);
+
         SetupGameSettings();
         SetupBoardUI();
         StartGame();
@@ -166,8 +168,12 @@ public class BoardManager : Singleton<BoardManager>
     {
         Debug.Log($"[BoardManager] Waiting for hand redraw...");
 
+        AudioSystem.Instance.PlaySFX(SFX.RedrawCardsStart);
+
         boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw: {"cardsRedrawn"}/2 [SKIP]");
         yield return new WaitForSeconds(1f);
+
+        AudioSystem.Instance.PlaySFX(SFX.RedrawCardsEnd);
 
         SetGamePhase(GamePhase.RoundStart);
     }
@@ -177,6 +183,9 @@ public class BoardManager : Singleton<BoardManager>
         if (state.PlayerHasPassed) yield break;
 
         Debug.Log($"[BoardManager] Player's turn...");
+
+        if (!state.OpponentHasPassed)
+            AudioSystem.Instance.PlaySFX(SFX.TurnPlayer);
 
         state.IsPlayerTurn = true;
         state.PlayerCanAct = true;
@@ -195,6 +204,9 @@ public class BoardManager : Singleton<BoardManager>
         if (state.OpponentHasPassed) yield break;
 
         Debug.Log($"[BoardManager] Opponent's turn...");
+
+        if (!state.PlayerHasPassed)
+            AudioSystem.Instance.PlaySFX(SFX.TurnOpponent);
 
         state.IsPlayerTurn = false;
         state.PlayerCanAct = false;
@@ -242,6 +254,7 @@ public class BoardManager : Singleton<BoardManager>
         if (state.PlayerLife == 2 && state.OpponentLife == 2)
         {
             // Coin toss
+            AudioSystem.Instance.PlaySFX(SFX.CoinFlip);
             yield return new WaitForSeconds(roundDelay);
 
             state.IsPlayerTurn = RandomUtils.GetRandom(0, 1) == 1;
@@ -280,18 +293,21 @@ public class BoardManager : Singleton<BoardManager>
         if (playerScore > opponentScore)
         {
             Debug.Log("[BoardManager] Player wins the round!");
+            AudioSystem.Instance.PlaySFX(SFX.RoundWin);
             state.OpponentLife--;
             boardUI.ShowBanner(Banner.RoundWin, "You won the round");
         }
         else if (playerScore < opponentScore)
         {
             Debug.Log("[BoardManager] Opponent wins the round!");
+            AudioSystem.Instance.PlaySFX(SFX.RoundLoss);
             state.PlayerLife--;
             boardUI.ShowBanner(Banner.RoundLoss, "You lost the round");
         }
         else
         {
             Debug.Log("[BoardManager] It's a draw!");
+            AudioSystem.Instance.PlaySFX(SFX.RoundDraw);
             state.PlayerLife--;
             state.OpponentLife--;
             boardUI.ShowBanner(Banner.RoundDraw, "You drew the round");
@@ -316,16 +332,19 @@ public class BoardManager : Singleton<BoardManager>
         if (state.PlayerLife == 0 && state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] The game ends in a draw!");
+            AudioSystem.Instance.PlaySFX(SFX.RoundDraw);
             boardUI.ShowEndScreen(EndScreen.Draw, this, state);
         }
         else if (state.OpponentLife == 0)
         {
             Debug.Log("[BoardManager] Player wins the game!");
+            AudioSystem.Instance.PlaySFX(SFX.GameWin);
             boardUI.ShowEndScreen(EndScreen.Win, this, state);
         }
         else
         {
             Debug.Log("[BoardManager] Opponent wins the game!");
+            AudioSystem.Instance.PlaySFX(SFX.GameLoss);
             boardUI.ShowEndScreen(EndScreen.Lose, this, state);
         }
     }
@@ -559,6 +578,7 @@ public class BoardManager : Singleton<BoardManager>
             state.PlayerHasPassed = true;
             playerHasActed = true;
             state.PlayerCanAct = false;
+            AudioSystem.Instance.PlaySFX(SFX.TurnOpponent);
             boardUI.ShowBanner(Banner.RoundPassed, "You passed");
             UpdateBoardUI();
             StartCoroutine(TransitionToNextGamePhase());
@@ -567,6 +587,7 @@ public class BoardManager : Singleton<BoardManager>
         {
             Debug.Log("[BoardManager] Opponent has passed.");
             state.OpponentHasPassed = true;
+            AudioSystem.Instance.PlaySFX(SFX.TurnPlayer);
             boardUI.ShowBanner(Banner.RoundPassed, "Your opponent has passed");
             UpdateBoardUI();
             StartCoroutine(TransitionToNextGamePhase());

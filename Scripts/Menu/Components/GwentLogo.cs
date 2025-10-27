@@ -12,10 +12,6 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public float hoverBrightness = 1.1f;
     public float transitionSpeed = 8f;
 
-    [Header("Sounds")]
-    public AudioClip hoverSound;
-    public AudioClip[] clickSounds;
-
     private Color baseColor;
     private bool hovering;
 
@@ -41,10 +37,7 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerEnter(PointerEventData eventData)
     {
         hovering = true;
-        if (hoverSound && AudioSystem.Instance != null)
-        {
-           AudioSystem.Instance.PlaySFX(hoverSound);
-        }
+        AudioSystem.Instance.PlaySFX(SFX.MouseHover);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -54,10 +47,9 @@ public class GwentLogo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (clickSounds != null && clickSounds.Length > 0 && AudioSystem.Instance != null)
-        {
-            int randomIndex = Random.Range(0, clickSounds.Length);
-            AudioSystem.Instance.PlayVoice(clickSounds[randomIndex]);
-        }
+        // Play a random Gwent sound effect on click
+        int randomIndex = RandomUtils.GetRandom((int)SFX.Gwent1, (int)SFX.Gwent11);
+
+        AudioSystem.Instance.PlaySFX((SFX)randomIndex);
     }
 }

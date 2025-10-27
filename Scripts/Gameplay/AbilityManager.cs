@@ -127,6 +127,8 @@ public class AbilityManager
     {
         yield return new WaitForSeconds(abilityTriggerDelay);
 
+        AudioSystem.Instance.PlaySFX(SFX.CardSpy);
+
         List<CardData> targetDeck = isPlayer ? state.playerDeck : state.opponentDeck;
 
         for (int i = 0; i < boardManager.spyDrawAmount; i++)

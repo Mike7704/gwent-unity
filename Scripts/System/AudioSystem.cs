@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,9 @@ public class AudioSystem : Singleton<AudioSystem>
     [Header("Music Playlist")]
     public List<AudioClip> playlist = new List<AudioClip>();
     public bool shuffle = false;
+
+    [Header("Sound Effects")]
+    public List<AudioClip> sfxClips = new List<AudioClip>();
 
     public delegate void OnTrackChanged(string trackName);
     public event OnTrackChanged TrackChanged;
@@ -40,7 +44,7 @@ public class AudioSystem : Singleton<AudioSystem>
 
         if (playlist.Count > 0)
         {
-            currentIndex = Random.Range(0, playlist.Count);
+            currentIndex = RandomUtils.GetRandom(0, playlist.Count - 1);
             PlayMusic(playlist[currentIndex]);
             isPaused = false;
         }
@@ -80,7 +84,7 @@ public class AudioSystem : Singleton<AudioSystem>
 
         if (shuffle)
         {
-            currentIndex = Random.Range(0, playlist.Count);
+            currentIndex = RandomUtils.GetRandom(0, playlist.Count - 1);
         }
         else
         {
@@ -99,7 +103,7 @@ public class AudioSystem : Singleton<AudioSystem>
 
         if (shuffle)
         {
-            currentIndex = Random.Range(0, playlist.Count);
+            currentIndex = RandomUtils.GetRandom(0, playlist.Count - 1);
         }
         else
         {
@@ -168,20 +172,26 @@ public class AudioSystem : Singleton<AudioSystem>
     /// <summary>
     /// Plays a sound effect.
     /// </summary>
-    /// <param name="clip"></param>
-    public void PlaySFX(AudioClip clip)
+    /// <param name="sfx"></param>
+    public void PlaySFX(SFX sfx)
     {
-        sfxSource.PlayOneShot(clip);
+        int index = (int)sfx;
+
+        // Check if the index is within bounds
+        if (index >= 0 && index < sfxClips.Count)
+            sfxSource.PlayOneShot(sfxClips[index]);
+        else
+            Debug.LogWarning($"[AudioSystem] SFX index {index} out of bounds for {sfx}.");
     }
 
     /// <summary>
     /// Plays a voice line and stops any currently playing voice.
     /// </summary>
     /// <param name="clip"></param>
-    public void PlayVoice(AudioClip clip)
+    public void PlayVoice(AudioClip clip, bool overrideSetting)
     {
         // Check percentage chance for playing a voice line
-        if (voicePercentageChance < RandomUtils.GetRandom(0, 100)) return;
+        if (voicePercentageChance < RandomUtils.GetRandom(0, 100) && !overrideSetting) return;
 
         if (voiceSource.isPlaying) voiceSource.Stop();
         voiceSource.clip = clip;
@@ -197,4 +207,53 @@ public class AudioSystem : Singleton<AudioSystem>
         sfxSource.Stop();
         voiceSource.Stop();
     }
+}
+
+public enum SFX
+{
+    AddCard,
+    CardBond,
+    CardDecoy,
+    CardHero,
+    CardHorn,
+    CardMedic,
+    CardMelee,
+    CardMorale,
+    CardRanged,
+    CardScorch,
+    CardSiege,
+    CardSpy,
+    CardSummon,
+    ChallengeComplete,
+    CoinFlip,
+    FactionAbility,
+    GameLoss,
+    GameWin,
+    Gwent1,
+    Gwent2,
+    Gwent3,
+    Gwent4,
+    Gwent5,
+    Gwent6,
+    Gwent7,
+    Gwent8,
+    Gwent9,
+    Gwent10,
+    Gwent11,
+    MouseHover,
+    OpenDeck,
+    RedrawCard,
+    RedrawCardsEnd,
+    RedrawCardsStart,
+    RoundDraw,
+    RoundLoss,
+    RoundWin,
+    StartGame,
+    TurnOpponent,
+    TurnPlayer,
+    WeatherClear,
+    WeatherFog,
+    WeatherFrost,
+    WeatherRain,
+    WeatherStorm
 }

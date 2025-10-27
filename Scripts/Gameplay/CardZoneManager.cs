@@ -37,6 +37,7 @@ public class CardZoneManager
 
         CardSorter.Sort(toZone);
 
+        PlayCardSFX(card, toZone);
         UpdateZoneUI(toZone, targetRow);
         RefreshRowLayouts();
     }
@@ -278,5 +279,39 @@ public class CardZoneManager
 
         Debug.LogWarning($"[CardZoneManager] Could not find card [{card.name}] in any zone.");
         return null;
+    }
+
+    /// <summary>
+    /// Plays sound effects based on the card and zone it is played to.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="zone"></param>
+    private void PlayCardSFX(CardData card, List<CardData> zone)
+    {
+        if (zone == state.playerMelee || zone == state.opponentMelee)
+        {
+            if (card.type == CardDefs.Type.Hero)
+                AudioSystem.Instance.PlaySFX(SFX.CardHero);
+            else
+                AudioSystem.Instance.PlaySFX(SFX.CardMelee);
+        }
+        else if (zone == state.playerRanged || zone == state.opponentRanged)
+        {
+            if (card.type == CardDefs.Type.Hero)
+                AudioSystem.Instance.PlaySFX(SFX.CardHero);
+            else
+                AudioSystem.Instance.PlaySFX(SFX.CardRanged);
+        }
+        else if (zone == state.playerSiege || zone == state.opponentSiege)
+        {
+            if (card.type == CardDefs.Type.Hero)
+                AudioSystem.Instance.PlaySFX(SFX.CardHero);
+            else
+                AudioSystem.Instance.PlaySFX(SFX.CardSiege);
+        }
+        else if (zone == state.playerDeck)
+        {
+            AudioSystem.Instance.PlaySFX(SFX.RedrawCard);
+        }
     }
 }

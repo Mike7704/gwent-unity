@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 /// Applies hover and click effects to buttons.
 /// </summary>
 [RequireComponent(typeof(Image))]
-public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     private Image image;
     private Material material;
@@ -14,10 +14,6 @@ public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [Header("Hover Settings")]
     public float hoverBrightness = 1.1f;
     public float transitionSpeed = 8f;
-
-    [Header("Sounds")]
-    public AudioClip hoverSound;
-    public AudioClip clickSound;
 
     private Color baseColor;
     private bool hovering;
@@ -44,22 +40,11 @@ public class GwentButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void OnPointerEnter(PointerEventData eventData)
     {
         hovering = true;
-        if (hoverSound && AudioSystem.Instance != null)
-        {
-            AudioSystem.Instance.PlaySFX(hoverSound);
-        }
+        AudioSystem.Instance.PlaySFX(SFX.MouseHover);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         hovering = false;
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        if (clickSound && AudioSystem.Instance != null)
-        {
-            AudioSystem.Instance.PlaySFX(clickSound);
-        }
     }
 }

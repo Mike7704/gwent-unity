@@ -105,6 +105,8 @@ public class DeckMenu : Singleton<DeckMenu>
         // Force immediate layout so items appear correctly
         ForceLayout();
 
+        AudioSystem.Instance.PlaySFX(SFX.OpenDeck);
+
         Debug.Log($"[DeckMenu] Displaying player deck ({playerDeck.Count} cards).");
     }
 
