@@ -8,6 +8,7 @@ public class CardZoneManager
 {
     private readonly BoardState state;
     private readonly BoardManager boardManager;
+    private AbilityManager abilityManager;
     private readonly Dictionary<CardData, CardUI> cardUIMap;
 
     public CardZoneManager(BoardState state, BoardManager boardManager, Dictionary<CardData, CardUI> cardUIMap)
@@ -151,7 +152,12 @@ public class CardZoneManager
         List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
         Transform graveyardTransform = isPlayer ? boardManager.PlayerGraveyardContainer : boardManager.OpponentGraveyardContainer;
 
-        if (card.type == CardDefs.Type.Standard)
+        if (card.ability == CardDefs.Ability.Avenger)
+        {
+            abilityManager.QueueAvenger(card, isPlayer);
+            DiscardCard(card, isPlayer);
+        }
+        else if (card.type == CardDefs.Type.Standard)
         {
             MoveCard(card, fromZone, graveyard, graveyardTransform);
             Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} sent [{card.name}] to graveyard");
@@ -314,5 +320,10 @@ public class CardZoneManager
         {
             AudioSystem.Instance.PlaySFX(SFX.RedrawCard);
         }
+    }
+
+    public void SetAbilityManager(AbilityManager abilityManager)
+    {
+        this.abilityManager = abilityManager;
     }
 }

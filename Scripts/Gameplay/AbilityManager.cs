@@ -12,7 +12,11 @@ public class AbilityManager
     private readonly BoardState state;
     private readonly CardZoneManager zoneManager;
 
+    private List<CardData> playerQueuedAvengers = new();
+    private List<CardData> opponentQueuedAvengers = new();
+
     private readonly float abilityTriggerDelay = 1f;
+    private readonly float cardSummonDelay = 0.3f;
 
     public AbilityManager(BoardState state, BoardManager boardManager, CardZoneManager zoneManager)
     {
@@ -61,7 +65,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Avenger:
-                // Ability
+                // Handled when moved to graveyard
                 break;
 
             case CardDefs.Ability.Bond:
@@ -122,6 +126,60 @@ public class AbilityManager
     }
 
     /// <summary>
+    /// Queues the avenger target to be summoned later.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    public void QueueAvenger(CardData card, bool isPlayer)
+    {
+        if (card.target == null || card.target.Count == 0)
+        {
+            Debug.LogWarning($"[AbilityManager] Avenger has no target defined for [{card.name}]");
+            return;
+        }
+
+        // Find the card the avenger will summon
+        List<CardData> cardToSummon = FindCardsByTargetIDs(card.target, isPlayer, searchSummonDeck:true);
+
+        if (cardToSummon.Count == 0) return;
+
+        foreach (var summonCard in cardToSummon)
+        {
+            if (isPlayer)
+                playerQueuedAvengers.Add(summonCard);
+            else
+                opponentQueuedAvengers.Add(summonCard);
+        }
+    }
+
+    /// <summary>
+    /// Play all queued avengers onto the board.
+    /// </summary>
+    public IEnumerator ResolveQueuedAvengers()
+    {
+        if (playerQueuedAvengers.Count == 0 && opponentQueuedAvengers.Count == 0) yield break;
+
+        Debug.Log($"[AbilityManager] Resolving avenger cards...");
+
+        AudioSystem.Instance.PlaySFX(SFX.CardSummon);
+
+        foreach (var cardToSummon in playerQueuedAvengers)
+        {
+            yield return new WaitForSeconds(cardSummonDelay);
+            zoneManager.AddCardToBoard(cardToSummon, isPlayer: true);
+        }
+
+        foreach (var cardToSummon in opponentQueuedAvengers)
+        {
+            yield return new WaitForSeconds(cardSummonDelay);
+            zoneManager.AddCardToBoard(cardToSummon, isPlayer: false);
+        }
+
+        playerQueuedAvengers.Clear();
+        opponentQueuedAvengers.Clear();
+    }
+
+    /// <summary>
     /// Spy ability: The player draws cards from their deck.
     /// </summary>
     private IEnumerator HandleSpy(bool isPlayer)
@@ -170,9 +228,8 @@ public class AbilityManager
         foreach (var summonCard in cardsToSummon)
         {
             zoneManager.AddCardToBoard(summonCard, isPlayer);
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(cardSummonDelay);
         }
-
     }
 
     /// <summary>

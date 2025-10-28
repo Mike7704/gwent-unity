@@ -66,6 +66,7 @@ public class BoardManager : Singleton<BoardManager>
         state = new BoardState();
         zoneManager = new CardZoneManager(state, this, cardUIMap);
         abilityManager = new AbilityManager(state, this, zoneManager);
+        zoneManager.SetAbilityManager(abilityManager);
         aiOpponent = new AIOpponent(state, this);
 
         InitialiseGeneralButtons();
@@ -241,7 +242,7 @@ public class BoardManager : Singleton<BoardManager>
 
     private IEnumerator HandleRoundStart()
     {
-        Debug.Log($"[BoardManager] Round started.");
+        Debug.Log($"[BoardManager] Starting round...");
 
         state.PlayerHasPassed = false;
         state.OpponentHasPassed = false;
@@ -253,6 +254,9 @@ public class BoardManager : Singleton<BoardManager>
         zoneManager.MoveRowToGraveyard(state.opponentMelee, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentRanged, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentSiege, isPlayer: false);
+
+        // Add any cards from avenger cards to the board
+        yield return StartCoroutine(abilityManager.ResolveQueuedAvengers());
 
         UpdateBoardUI();
 
