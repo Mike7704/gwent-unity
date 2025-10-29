@@ -227,6 +227,8 @@ public class BoardManager : Singleton<BoardManager>
 
     private IEnumerator WaitForCardResolve()
     {
+        abilityManager.ResetResolvedAbilities();
+
         if (lastPlayedCard != null)
         {
             // Resolve the last played card's ability
@@ -236,6 +238,7 @@ public class BoardManager : Singleton<BoardManager>
         UpdateBoardUI();
 
         lastPlayedCard = null; // Clear the last played card
+        abilityManager.ResetResolvedAbilities();
 
         yield return StartCoroutine(TransitionToNextGamePhase());
     }

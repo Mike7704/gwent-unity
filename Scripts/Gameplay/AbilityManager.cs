@@ -12,8 +12,10 @@ public class AbilityManager
     private readonly BoardState state;
     private readonly CardZoneManager zoneManager;
 
-    private List<CardData> playerQueuedAvengers = new();
-    private List<CardData> opponentQueuedAvengers = new();
+    private HashSet<int> resolvedAbilities = new HashSet<int>(); // Track resolved abilities each turn
+
+    private List<CardData> playerQueuedAvengers = new(); // Cards to summon at start of round
+    private List<CardData> opponentQueuedAvengers = new(); // Cards to summon at start of round
 
     private readonly float abilityTriggerDelay = 1f;
     private readonly float cardSummonDelay = 0.3f;
@@ -30,7 +32,13 @@ public class AbilityManager
     /// </summary>
     public IEnumerator ResolveCard(CardData card, bool isPlayer)
     {
+        // No ability to resolve
         if (card == null || string.IsNullOrEmpty(card.ability)) yield break;
+
+        // Check if this ability has already been resolved this turn to avoid recursion
+        if (resolvedAbilities.Contains(card.id)) yield break;
+
+        resolvedAbilities.Add(card.id);
 
         Debug.Log($"[AbilityManager] Triggering {card.ability} ability for [{card.name}]");
 
@@ -77,7 +85,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.DrawEnemyDiscard:
-                yield return HandleSpy(isPlayer);
+                yield return boardManager.StartCoroutine(HandleSpy(isPlayer));
                 break;
 
             case CardDefs.Ability.Horn:
@@ -101,11 +109,11 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Muster:
-                yield return HandleMuster(card, isPlayer, isMusterPlus:false);
+                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus:false));
                 break;
 
             case CardDefs.Ability.MusterPlus:
-                yield return HandleMuster(card, isPlayer, isMusterPlus:true);
+                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus:true));
                 break;
 
             case CardDefs.Ability.Scorch:
@@ -117,7 +125,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Spy:
-                yield return HandleSpy(isPlayer);
+                yield return boardManager.StartCoroutine(HandleSpy(isPlayer));
                 break;
 
             default:
@@ -167,12 +175,14 @@ public class AbilityManager
         {
             yield return new WaitForSeconds(cardSummonDelay);
             zoneManager.AddCardToBoard(cardToSummon, isPlayer: true);
+            yield return boardManager.StartCoroutine(ResolveCard(cardToSummon, isPlayer: true));
         }
 
         foreach (var cardToSummon in opponentQueuedAvengers)
         {
             yield return new WaitForSeconds(cardSummonDelay);
             zoneManager.AddCardToBoard(cardToSummon, isPlayer: false);
+            yield return boardManager.StartCoroutine(ResolveCard(cardToSummon, isPlayer: false));
         }
 
         playerQueuedAvengers.Clear();
@@ -228,6 +238,7 @@ public class AbilityManager
         foreach (var summonCard in cardsToSummon)
         {
             zoneManager.AddCardToBoard(summonCard, isPlayer);
+            yield return boardManager.StartCoroutine(ResolveCard(summonCard, isPlayer));
             yield return new WaitForSeconds(cardSummonDelay);
         }
     }
@@ -278,4 +289,11 @@ public class AbilityManager
         return result.Distinct().ToList();
     }
 
+    /// <summary>
+    /// Resets the resolved abilities tracker - should be called before a new ability resolution phase.
+    /// </summary>
+    public void ResetResolvedAbilities()
+    {
+        resolvedAbilities.Clear();
+    }
 }
