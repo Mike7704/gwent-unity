@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +78,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Bond:
-                yield return boardManager.StartCoroutine(HandleBond());
+                yield return boardManager.StartCoroutine(HandleBond(card, isPlayer));
                 break;
 
             case CardDefs.Ability.Decoy:
@@ -89,7 +90,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Horn:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleHorn());
                 break;
 
             case CardDefs.Ability.Mardroeme:
@@ -194,10 +195,22 @@ public class AbilityManager
     /// </summary>
     /// <param name="card"></param>
     /// <param name="isPlayer"></param>
-    private IEnumerator HandleBond()
+    private IEnumerator HandleBond(CardData card, bool isPlayer)
     {
+        if (FindCardsByTargetIDs(card.target, isPlayer, CardSearchArea.Row, zoneManager.GetTargetRowList(card, isPlayer)).Count == 0)
+            yield break; // No cards to bond with yet
+
         yield return new WaitForSeconds(abilityTriggerDelay);
         AudioSystem.Instance.PlaySFX(SFX.CardMorale);
+    }
+
+    /// <summary>
+    /// Horn ability: Doubles the strength of all units on a given row, excluding itself (limit one per row).
+    /// </summary>
+    private IEnumerator HandleHorn()
+    {
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        AudioSystem.Instance.PlaySFX(SFX.CardHorn);
     }
 
     /// <summary>
@@ -298,6 +311,14 @@ public class AbilityManager
         ApplyMoraleToRow(state.opponentRanged);
         ApplyMoraleToRow(state.opponentSiege);
 
+        // Apply horn boosts
+        ApplyHornToRow(state.playerMelee);
+        ApplyHornToRow(state.playerRanged);
+        ApplyHornToRow(state.playerSiege);
+        ApplyHornToRow(state.opponentMelee);
+        ApplyHornToRow(state.opponentRanged);
+        ApplyHornToRow(state.opponentSiege);
+
         CardManager.Instance.RefreshAllCardUI();
     }
 
@@ -359,6 +380,27 @@ public class AbilityManager
             }
 
             card.strength += moraleCount;
+        }
+    }
+
+    /// <summary>
+    /// Applies horn boost to all cards on a given row.
+    /// </summary>
+    /// <param name="row"></param>
+    private void ApplyHornToRow(List<CardData> row)
+    {
+        if (row == null || row.Count == 0) return;
+
+        bool isHornOnRow = row.Count(c => c.ability == CardDefs.Ability.Horn) > 0;
+        if (!isHornOnRow) return;
+
+        foreach (var card in row)
+        {
+            // Skip boosting non-standard cards and itself
+            if (card.type != CardDefs.Type.Standard || card.ability == CardDefs.Ability.Horn)
+                continue;
+
+            card.strength *= 2;
         }
     }
 
