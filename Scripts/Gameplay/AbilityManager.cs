@@ -77,7 +77,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Bond:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleBond());
                 break;
 
             case CardDefs.Ability.Decoy:
@@ -147,7 +147,7 @@ public class AbilityManager
         }
 
         // Find the card the avenger will summon
-        List<CardData> cardToSummon = FindCardsByTargetIDs(card.target, isPlayer, searchSummonDeck:true);
+        List<CardData> cardToSummon = FindCardsByTargetIDs(card.target, isPlayer, CardSearchArea.SummonDeck);
 
         if (cardToSummon.Count == 0) return;
 
@@ -190,6 +190,17 @@ public class AbilityManager
     }
 
     /// <summary>
+    /// Bond ability: Multiplies the strength of cards when other bonded cards are present on the same row.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    private IEnumerator HandleBond()
+    {
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        AudioSystem.Instance.PlaySFX(SFX.CardMorale);
+    }
+
+    /// <summary>
     /// Spy ability: The player draws cards from their deck.
     /// </summary>
     private IEnumerator HandleSpy(bool isPlayer)
@@ -214,7 +225,7 @@ public class AbilityManager
     }
 
     /// <summary>
-    /// Morale ability: Boosts the strength of all allied units on the board (excluding itself).
+    /// Morale ability: Boosts the strength of all allied units on its board (excluding itself).
     /// </summary>
     private IEnumerator HandleMorale()
     {
@@ -237,7 +248,7 @@ public class AbilityManager
         }
 
         // Find all valid muster targets
-        List<CardData> cardsToSummon = FindCardsByTargetIDs(card.target, isPlayer, isMusterPlus);
+        List<CardData> cardsToSummon = FindCardsByTargetIDs(card.target, isPlayer, isMusterPlus ? CardSearchArea.SummonDeck : CardSearchArea.HandAndDeck);
 
         if (cardsToSummon.Count == 0) yield break;
 
@@ -271,6 +282,14 @@ public class AbilityManager
         ResetCardStrengthOnRow(state.opponentRanged);
         ResetCardStrengthOnRow(state.opponentSiege);
 
+        // Apply bond
+        ApplyBondToRow(state.playerMelee, isPlayer:true);
+        ApplyBondToRow(state.playerRanged, isPlayer: true);
+        ApplyBondToRow(state.playerSiege, isPlayer: true);
+        ApplyBondToRow(state.opponentMelee, isPlayer: false);
+        ApplyBondToRow(state.opponentRanged, isPlayer: false);
+        ApplyBondToRow(state.opponentSiege, isPlayer: false);
+
         // Apply morale boosts
         ApplyMoraleToRow(state.playerMelee);
         ApplyMoraleToRow(state.playerRanged);
@@ -290,6 +309,27 @@ public class AbilityManager
     {
         foreach (var card in row)
             card.strength = card.defaultStrength;
+    }
+
+    /// <summary>
+    /// Applies bond to all cards on a given row.
+    /// </summary>
+    /// <param name="row"></param>
+    private void ApplyBondToRow(List<CardData> row, bool isPlayer)
+    {
+        if (row == null || row.Count == 0) return;
+
+        List<CardData> bondCards = row.Where(c => c.ability == CardDefs.Ability.Bond && c.type == CardDefs.Type.Standard).ToList();
+        if (bondCards.Count == 0) return;
+
+        foreach (var card in bondCards)
+        {
+            // Count how many bond cards on row match this card's targets
+            int bondMatches = FindCardsByTargetIDs(card.target, isPlayer, CardSearchArea.Row, row).Count;
+
+            if (bondMatches > 0)
+                card.strength *= (bondMatches + 1); // +1 to include itself
+        }
     }
 
     /// <summary>
@@ -327,16 +367,17 @@ public class AbilityManager
     // -------------------------
 
     /// <summary>
-    /// Returns cards based on target IDs for abilities like Muster.
+    /// Returns cards based on target IDs for abilities like Avenger, Muster, Bond.
     /// </summary>
     /// <param name="targets"></param>
     /// <param name="isPlayer"></param>
+    /// <param name="searchArea"></param>
     /// <returns></returns>
-    private List<CardData> FindCardsByTargetIDs(List<CardTarget> targets, bool isPlayer, bool searchSummonDeck)
+    private List<CardData> FindCardsByTargetIDs(List<CardTarget> targets, bool isPlayer, CardSearchArea searchArea, List<CardData> row = null)
     {
         List<CardData> result = new List<CardData>();
 
-        if (searchSummonDeck)
+        if (searchArea == CardSearchArea.SummonDeck)
         {
             // Search only the summon deck for each target ID
             List<CardData> summonDeck = isPlayer ? state.playerSummonDeck : state.opponentSummonDeck;
@@ -345,12 +386,11 @@ public class AbilityManager
             {
                 // Player summon cards
                 result.AddRange(summonDeck.Where(c => c.id == target.id));
-
                 // Opponent summon cards (with 1000 offset)
                 result.AddRange(summonDeck.Where(c => c.id - 1000 == target.id));
             }
         }
-        else
+        else if (searchArea == CardSearchArea.HandAndDeck)
         {
             // Search hand and deck for each target ID
             List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
@@ -361,13 +401,22 @@ public class AbilityManager
                 // Player cards
                 result.AddRange(hand.Where(c => c.id == target.id));
                 result.AddRange(deck.Where(c => c.id == target.id));
-
                 // Opponent cards (with 1000 offset)
                 result.AddRange(hand.Where(c => c.id - 1000 == target.id));
                 result.AddRange(deck.Where(c => c.id - 1000 == target.id));
             }
         }
-
+        else // CardSearchArea.Row
+        {
+            foreach (var target in targets)
+            {
+                // Player cards
+                result.AddRange(row.Where(c => c.id == target.id));
+                // Opponent cards (with 1000 offset)
+                result.AddRange(row.Where(c => c.id - 1000 == target.id));
+            }
+        }
+  
         // Remove any duplicates
         return result.Distinct().ToList();
     }
@@ -378,5 +427,12 @@ public class AbilityManager
     public void ResetResolvedAbilities()
     {
         resolvedAbilities.Clear();
+    }
+
+    private enum CardSearchArea
+    {
+        SummonDeck,
+        HandAndDeck,
+        Row
     }
 }
