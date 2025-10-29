@@ -34,12 +34,12 @@ public static class CardSorter
                 return a.id.CompareTo(b.id);
 
             // Regular cards sorted by strength
-            int strengthCompare = b.strength.CompareTo(a.strength);
+            int strengthCompare = b.defaultStrength.CompareTo(a.defaultStrength);
             if (strengthCompare != 0) return strengthCompare;
 
             // Then by range
-            int aRangeIndex = Array.IndexOf(rangeOrder, a.range ?? "");
-            int bRangeIndex = Array.IndexOf(rangeOrder, b.range ?? "");
+            int aRangeIndex = Array.IndexOf(rangeOrder, a.defaultRange ?? "");
+            int bRangeIndex = Array.IndexOf(rangeOrder, b.defaultRange ?? "");
             int rangeCompare = aRangeIndex.CompareTo(bRangeIndex);
             if (rangeCompare != 0) return rangeCompare;
 

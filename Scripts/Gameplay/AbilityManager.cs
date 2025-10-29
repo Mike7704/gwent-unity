@@ -101,7 +101,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Morale:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleMorale());
                 break;
 
             case CardDefs.Ability.Morph:
@@ -214,9 +214,20 @@ public class AbilityManager
     }
 
     /// <summary>
+    /// Morale ability: Boosts the strength of all allied units on the board (excluding itself).
+    /// </summary>
+    private IEnumerator HandleMorale()
+    {
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        AudioSystem.Instance.PlaySFX(SFX.CardMorale);
+    }
+
+    /// <summary>
     /// Muster ability: Summons all targeted cards from the hand and deck (or summon deck if muster plus) to the board.
     /// </summary>
+    /// <param name="card"></param>
     /// <param name="isPlayer"></param>
+    /// <param name="isMusterPlus"></param>
     private IEnumerator HandleMuster(CardData card, bool isPlayer, bool isMusterPlus)
     {
         if (card.target == null || card.target.Count == 0)
@@ -242,6 +253,78 @@ public class AbilityManager
             yield return new WaitForSeconds(cardSummonDelay);
         }
     }
+
+    // -------------------------
+    // Row Strength Calculation
+    // -------------------------
+
+    /// <summary>
+    /// Recalculates scores for all cards on the board.
+    /// </summary>
+    public void CalculateAllCardStrengths()
+    {
+        // Reset card scores
+        ResetCardStrengthOnRow(state.playerMelee);
+        ResetCardStrengthOnRow(state.playerRanged);
+        ResetCardStrengthOnRow(state.playerSiege);
+        ResetCardStrengthOnRow(state.opponentMelee);
+        ResetCardStrengthOnRow(state.opponentRanged);
+        ResetCardStrengthOnRow(state.opponentSiege);
+
+        // Apply morale boosts
+        ApplyMoraleToRow(state.playerMelee);
+        ApplyMoraleToRow(state.playerRanged);
+        ApplyMoraleToRow(state.playerSiege);
+        ApplyMoraleToRow(state.opponentMelee);
+        ApplyMoraleToRow(state.opponentRanged);
+        ApplyMoraleToRow(state.opponentSiege);
+
+        CardManager.Instance.RefreshAllCardUI();
+    }
+
+    /// <summary>
+    /// Resets card scores on a given row to their default values.
+    /// </summary>
+    /// <param name="row"></param>
+    private void ResetCardStrengthOnRow(List<CardData> row)
+    {
+        foreach (var card in row)
+            card.strength = card.defaultStrength;
+    }
+
+    /// <summary>
+    /// Applies morale boosts to all cards on a given row.
+    /// </summary>
+    /// <param name="row"></param>
+    private void ApplyMoraleToRow(List<CardData> row)
+    {
+        if (row == null || row.Count == 0) return;
+
+        // Count morale cards
+        int moraleCount = row.Count(c => c.ability == CardDefs.Ability.Morale);
+        if (moraleCount == 0) return;
+
+        foreach (var card in row)
+        {
+            // Skip boosting non-standard cards
+            if (card.type != CardDefs.Type.Standard)
+                continue;
+
+            // Skip boosting itself
+            if (card.ability == CardDefs.Ability.Morale)
+            {
+                // Still boosted by other morale cards
+                card.strength += (moraleCount - 1);
+                continue;
+            }
+
+            card.strength += moraleCount;
+        }
+    }
+
+    // -------------------------
+    // Helper Functions
+    // -------------------------
 
     /// <summary>
     /// Returns cards based on target IDs for abilities like Muster.

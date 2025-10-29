@@ -21,13 +21,17 @@ public class CardData
     public bool unlocked;
     public bool challengeRewardCard;
 
+    // Runtime defaults
+    [NonSerialized] public int defaultStrength;
+    [NonSerialized] public string defaultRange;
+
     /// <summary>
     /// Clones the card data for creating instances in gameplay.
     /// </summary>
     /// <returns></returns>
     public CardData Clone()
     {
-        return new CardData
+        var clone = new CardData
         {
             id = id,
             faction = faction,
@@ -43,6 +47,11 @@ public class CardData
             unlocked = unlocked,
             challengeRewardCard = challengeRewardCard
         };
+
+        clone.defaultStrength = strength;
+        clone.defaultRange = range;
+
+        return clone;
     }
 }
 

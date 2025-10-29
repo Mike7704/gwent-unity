@@ -56,7 +56,7 @@ public class InspectCardWindow : Singleton<InspectCardWindow>
     private void SetCardInfo(CardData cardData)
     {
         string type = string.IsNullOrEmpty(cardData.type) ? "N/A" : TextUtils.CapFirstLetter(cardData.type);
-        string range = string.IsNullOrEmpty(cardData.range) ? "N/A" : TextUtils.CapFirstLetter(cardData.range);
+        string range = string.IsNullOrEmpty(cardData.defaultRange) ? "N/A" : TextUtils.CapFirstLetter(cardData.defaultRange);
         string ability = string.IsNullOrEmpty(cardData.ability) ? "N/A" : CardManager.Instance.GetAbilityOfficalName(cardData);
         string abilityDesc = CardManager.Instance.GetAbilityDescription(cardData.ability);
 
@@ -70,13 +70,17 @@ public class InspectCardWindow : Singleton<InspectCardWindow>
     }
 
     /// <summary>
-    /// Displays the selected card
+    /// Displays the selected card (with default values)
     /// </summary>
     /// <param name="cardData"></param>
     private void DisplayCard(CardData cardData)
     {
         ClearExistingCards(cardContainer);
-        CardUI card = CardManager.Instance.CreateCard(cardData, cropped: false, parent: cardContainer);
+
+        CardData inspectCard = cardData.Clone();
+        inspectCard.strength = cardData.defaultStrength;
+        inspectCard.range = cardData.defaultRange;
+        CardUI card = CardManager.Instance.CreateCard(inspectCard, cropped: false, parent: cardContainer);
         card.SetInteractable(false);
     }
 

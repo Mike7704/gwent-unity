@@ -111,12 +111,15 @@ public class CardDatabase : Singleton<CardDatabase>
         cardIDLookup.Clear();
         foreach (var card in allCards)
         {
+            // Set runtime default values
+            card.defaultStrength = card.strength;
+            card.defaultRange = card.range;
+
             if (!cardIDLookup.ContainsKey(card.id))
                 cardIDLookup.Add(card.id, card);
             else
                 Debug.LogWarning($"[CardDatabase] Duplicate card ID detected: {card.id}");
         }
-
 
         Debug.Log($"[CardDatabase] Loaded {allCards.Count} cards across {factionCards.Count} factions.");
     }

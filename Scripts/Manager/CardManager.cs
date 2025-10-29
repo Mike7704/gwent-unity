@@ -108,6 +108,18 @@ public class CardManager : Singleton<CardManager>
     // -----------------------------
 
     /// <summary>
+    /// Refreshes the UI of all active cards.
+    /// </summary>
+    public void RefreshAllCardUI()
+    {
+        foreach (var cardUI in activeCards)
+        {
+            if (cardUI != null && cardUI.gameObject.activeInHierarchy)
+                cardUI.RefreshUI();
+        }
+    }
+
+    /// <summary>
     /// Retrieves a card from the pool or instantiates a new one.
     /// </summary>
     private CardUI GetCardFromPool(bool cropped)

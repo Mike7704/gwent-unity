@@ -660,6 +660,7 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     public void UpdateBoardUI()
     {
+        abilityManager.CalculateAllCardStrengths();
         boardUI.UpdateUI(state);
     }
 

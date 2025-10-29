@@ -75,6 +75,17 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         SetFactionBack();
     }
 
+    /// <summary>
+    /// Refresh dynamic UI elements
+    /// </summary>
+    public void RefreshUI()
+    {
+        if (cardData == null)
+            return;
+
+        SetStrengthText();
+    }
+
     // Set card background image
     private void SetBackground()
     {
