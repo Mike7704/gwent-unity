@@ -16,6 +16,7 @@ public class BoardManager : Singleton<BoardManager>
     [Header("Containers")]
     public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerSummonDeckContainer, PlayerDeckContainer, PlayerGraveyardContainer;
     public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer;
+    public Transform WeatherCardsContainer;
 
     [Header("General UI")]
     public Button PassButton;
@@ -250,6 +251,9 @@ public class BoardManager : Singleton<BoardManager>
         state.PlayerHasPassed = false;
         state.OpponentHasPassed = false;
 
+        // Hide weather images
+        boardUI.HideAllWeather();
+
         // Move all cards on both sides to graveyards
         zoneManager.MoveRowToGraveyard(state.playerMelee, isPlayer: true);
         zoneManager.MoveRowToGraveyard(state.playerRanged, isPlayer: true);
@@ -257,6 +261,7 @@ public class BoardManager : Singleton<BoardManager>
         zoneManager.MoveRowToGraveyard(state.opponentMelee, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentRanged, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentSiege, isPlayer: false);
+        zoneManager.MoveRowToGraveyard(state.weatherCards, isPlayer: false);
 
         // Add any cards from avenger cards to the board
         yield return StartCoroutine(abilityManager.ResolveQueuedAvengers());
@@ -423,9 +428,10 @@ public class BoardManager : Singleton<BoardManager>
         CreateDeck(DeckManager.Instance.NPCDeck, OpponentDeckContainer, isPlayer: false);
 
         // Draw initial hands
-        DrawInitialHand(state.playerDeck, isPlayer: true);
-        DrawInitialHand(state.opponentDeck, isPlayer: false);
+        DrawInitialHand(isPlayer: true);
+        DrawInitialHand(isPlayer: false);
 
+        boardUI.HideAllWeather();
         boardUI.HideBanner();
         boardUI.HideEndScreen();
         UpdateBoardUI();
@@ -506,11 +512,10 @@ public class BoardManager : Singleton<BoardManager>
     /// Draws a random initial hand from the deck.
     /// </summary>
     /// <param name="deck">Deck to draw from.</param>
-    /// <param name="hand">Hand to add drawn cards to.</param>
-    /// <param name="handRow">UI row where cards should appear.</param>
-    /// <param name="handSize">Number of cards to draw.</param>
-    private void DrawInitialHand(List<CardData> deck, bool isPlayer)
+    private void DrawInitialHand(bool isPlayer)
     {
+        List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
+
         for (int i = 0; i < initialHandSize && deck.Count > 0; i++)
         {
             int randomIndex = RandomUtils.GetRandom(0, deck.Count - 1);
@@ -664,6 +669,16 @@ public class BoardManager : Singleton<BoardManager>
         boardUI.UpdateUI(state);
     }
 
+    /// <summary>
+    /// Shows or hides weather effects on the board.
+    /// </summary>
+    /// <param name="ability"></param>
+    /// <param name="show"></param>
+    public void ShowWeather(string ability, bool show)
+    {
+        boardUI.ShowWeather(ability, show);
+    }
+
     // -------------------------
     // Quit Game
     // -------------------------
@@ -732,5 +747,6 @@ public class BoardManager : Singleton<BoardManager>
         state.opponentSiege.Clear();
         state.playerGraveyard.Clear();
         state.opponentGraveyard.Clear();
+        state.weatherCards.Clear();
     }
 }

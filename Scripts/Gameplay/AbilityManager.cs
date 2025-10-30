@@ -41,36 +41,18 @@ public class AbilityManager
 
         resolvedAbilities.Add(card.id);
 
-        Debug.Log($"[AbilityManager] Triggering {card.ability} ability for [{card.name}]");
+        Debug.Log($"[AbilityManager] Resolving {card.ability} ability for [{card.name}]");
 
         switch (card.ability)
         {
             case CardDefs.Ability.Clear:
-                // Ability
-                break;
-
             case CardDefs.Ability.Frost:
-                // Ability
-                break;
-
-            case CardDefs.Ability.Fog:
-                // Ability
-                break;
-
+            case CardDefs.Ability.Fog: 
             case CardDefs.Ability.Rain:
-                // Ability
-                break;
-
             case CardDefs.Ability.Storm:
-                // Ability
-                break;
-
             case CardDefs.Ability.Nature:
-                // Ability
-                break;
-
             case CardDefs.Ability.WhiteFrost:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleWeather(card));
                 break;
 
             case CardDefs.Ability.Avenger:
@@ -110,11 +92,11 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Muster:
-                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus:false));
+                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus: false));
                 break;
 
             case CardDefs.Ability.MusterPlus:
-                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus:true));
+                yield return boardManager.StartCoroutine(HandleMuster(card, isPlayer, isMusterPlus: true));
                 break;
 
             case CardDefs.Ability.Scorch:
@@ -130,6 +112,47 @@ public class AbilityManager
                 break;
 
             default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Weather ability: Reduces the strength of all standard cards on a row to 1.
+    /// </summary>
+    private IEnumerator HandleWeather(CardData card)
+    {
+        yield return new WaitForSeconds(abilityTriggerDelay);
+
+        switch (card.ability)
+        {
+            case CardDefs.Ability.Clear:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherClear);
+                boardManager.ShowWeather(CardDefs.Ability.Clear, show: true);
+                yield return new WaitForSeconds(abilityTriggerDelay);
+                zoneManager.MoveRowToGraveyard(state.weatherCards, isPlayer: false);
+                boardManager.ShowWeather(CardDefs.Ability.Frost, show: false);
+                boardManager.ShowWeather(CardDefs.Ability.Fog, show: false);
+                boardManager.ShowWeather(CardDefs.Ability.Rain, show: false);
+                yield return new WaitForSeconds(abilityTriggerDelay);
+                boardManager.ShowWeather(CardDefs.Ability.Clear, show: false);
+                break;
+            case CardDefs.Ability.Frost:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherFrost);
+                break;
+            case CardDefs.Ability.Fog:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherFog);
+                break;
+            case CardDefs.Ability.Rain:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherRain);
+                break;
+            case CardDefs.Ability.Storm:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherStorm);
+                break;
+            case CardDefs.Ability.Nature:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherStorm);
+                break;
+            case CardDefs.Ability.WhiteFrost:
+                AudioSystem.Instance.PlaySFX(SFX.WeatherFrost);
                 break;
         }
     }
@@ -295,6 +318,9 @@ public class AbilityManager
         ResetCardStrengthOnRow(state.opponentRanged);
         ResetCardStrengthOnRow(state.opponentSiege);
 
+        // Apply weather
+        ApplyWeatherToRows();
+
         // Apply bond
         ApplyBondToRow(state.playerMelee, isPlayer:true);
         ApplyBondToRow(state.playerRanged, isPlayer: true);
@@ -330,6 +356,51 @@ public class AbilityManager
     {
         foreach (var card in row)
             card.strength = card.defaultStrength;
+    }
+
+    /// <summary>
+    /// Applies weather effects to the corresponding rows, reducing standard card strengths to 1.
+    /// </summary>
+    private void ApplyWeatherToRows()
+    {
+        // No weather cards active
+        if (state.weatherCards == null || state.weatherCards.Count == 0) return;
+
+        bool applyFrost = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Frost);
+        bool applyFog = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Fog);
+        bool applyRain = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Rain);
+        bool applyStorm = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Storm);
+        bool applyNature = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Nature);
+        bool applyWhiteFrost = state.weatherCards.Any(c => c.ability == CardDefs.Ability.WhiteFrost);
+
+        // Apply frost to melee rows
+        if (applyFrost || applyNature || applyWhiteFrost)
+        {
+            boardManager.ShowWeather(CardDefs.Ability.Frost, show: true);
+            ApplyWeatherEffectToRow(state.playerMelee, state.opponentMelee);
+        }
+        // Apply fog to ranged rows
+        if (applyFog || applyStorm || applyWhiteFrost)
+        {
+            boardManager.ShowWeather(CardDefs.Ability.Fog, show: true);
+            ApplyWeatherEffectToRow(state.playerRanged, state.opponentRanged);
+        }
+        // Apply rain to siege rows
+        if (applyRain || applyStorm || applyNature)
+        {
+            boardManager.ShowWeather(CardDefs.Ability.Rain, show: true);
+            ApplyWeatherEffectToRow(state.playerSiege, state.opponentSiege);
+        }
+    }
+    private void ApplyWeatherEffectToRow(List<CardData> playerRow, List<CardData> opponentRow)
+    {
+        foreach (var card in playerRow)
+            if (card.type == CardDefs.Type.Standard && card.strength > 0)
+                card.strength = 1;
+
+        foreach (var card in opponentRow)
+            if (card.type == CardDefs.Type.Standard && card.strength > 0)
+                card.strength = 1;
     }
 
     /// <summary>
@@ -391,7 +462,7 @@ public class AbilityManager
     {
         if (row == null || row.Count == 0) return;
 
-        bool isHornOnRow = row.Count(c => c.ability == CardDefs.Ability.Horn) > 0;
+        bool isHornOnRow = row.Any(c => c.ability == CardDefs.Ability.Horn);
         if (!isHornOnRow) return;
 
         foreach (var card in row)

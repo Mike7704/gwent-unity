@@ -26,6 +26,21 @@ public class CardData
     [NonSerialized] public string defaultRange;
 
     /// <summary>
+    /// Returns true if the card is a weather card.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsWeatherCard()
+    {
+        return ability == CardDefs.Ability.Clear ||
+               ability == CardDefs.Ability.Frost ||
+               ability == CardDefs.Ability.Fog ||
+               ability == CardDefs.Ability.Rain ||
+               ability == CardDefs.Ability.Storm ||
+               ability == CardDefs.Ability.Nature ||
+               ability == CardDefs.Ability.WhiteFrost;
+    }
+
+    /// <summary>
     /// Clones the card data for creating instances in gameplay.
     /// </summary>
     /// <returns></returns>

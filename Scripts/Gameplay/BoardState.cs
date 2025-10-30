@@ -47,6 +47,9 @@ public class BoardState
     public List<CardData> opponentRanged = new();
     public List<CardData> opponentSiege = new();
 
+    // Weather cards
+    public List<CardData> weatherCards = new();
+
     /// <summary>
     /// Calculates the score on a row.
     /// </summary>

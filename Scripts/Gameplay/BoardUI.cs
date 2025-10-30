@@ -42,6 +42,12 @@ public class BoardUI : MonoBehaviour
     public Sprite FullLifeSprite;
     public Sprite LostLifeSprite;
 
+    [Header("Weather")]
+    public Image FrostWeatherImage;
+    public Image FogWeatherImage;
+    public Image RainWeatherImage;
+    public Image ClearWeatherImage;
+
     [Header("Banner")]
     public Image BannerImage;
     public TextMeshProUGUI BannerMessage;
@@ -127,6 +133,50 @@ public class BoardUI : MonoBehaviour
         PlayerFaction.text = playerFaction;
         OpponentName.text = opponentName;
         OpponentFaction.text = opponentFaction;
+    }
+
+    /// <summary>
+    /// Shows or hides weather effects on the board
+    /// </summary>
+    public void ShowWeather(string weatherAbility, bool show)
+    {
+        switch (weatherAbility)
+        {
+            case CardDefs.Ability.Clear:
+                ClearWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.Frost:
+                FrostWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.Fog:
+                FogWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.Rain:
+                RainWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.Storm:
+                FogWeatherImage.enabled = show;
+                RainWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.Nature:
+                FrostWeatherImage.enabled = show;
+                RainWeatherImage.enabled = show;
+                break;
+            case CardDefs.Ability.WhiteFrost:
+                FrostWeatherImage.enabled = show;
+                FogWeatherImage.enabled = show;
+                break;
+            default:
+                Debug.LogWarning("[BoardUI] Unsupported weather type: " + weatherAbility);
+                break;
+        }
+    }
+    public void HideAllWeather()
+    {
+        FrostWeatherImage.enabled = false;
+        FogWeatherImage.enabled = false;
+        RainWeatherImage.enabled = false;
+        ClearWeatherImage.enabled = false;
     }
 
     /// <summary>
