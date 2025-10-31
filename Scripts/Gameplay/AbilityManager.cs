@@ -100,11 +100,11 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Scorch:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleScorch());
                 break;
 
             case CardDefs.Ability.ScorchRow:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleScorchRow(card, isPlayer));
                 break;
 
             case CardDefs.Ability.Spy:
@@ -298,6 +298,93 @@ public class AbilityManager
             zoneManager.AddCardToBoard(summonCard, isPlayer);
             yield return boardManager.StartCoroutine(ResolveCard(summonCard, isPlayer));
             yield return new WaitForSeconds(cardSummonDelay);
+        }
+    }
+
+    /// <summary>
+    /// Scorch ability: Destroys the highest strength cards on the board.
+    /// </summary>
+    private IEnumerator HandleScorch()
+    {
+        // Get all cards on the board
+        List<CardData> allCards = new List<CardData>();
+        allCards.AddRange(state.playerMelee);
+        allCards.AddRange(state.playerRanged);
+        allCards.AddRange(state.playerSiege);
+        allCards.AddRange(state.opponentMelee);
+        allCards.AddRange(state.opponentRanged);
+        allCards.AddRange(state.opponentSiege);
+
+        // Filter only standard cards
+        List<CardData> standardCards = allCards.Where(c => c.type == CardDefs.Type.Standard).ToList();
+        if (standardCards.Count == 0) yield break;
+
+        // Find the maximum strength value
+        int maxStrength = standardCards.Max(c => c.strength);
+        List<CardData> highestCards = standardCards.Where(c => c.strength == maxStrength).ToList();
+
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        AudioSystem.Instance.PlaySFX(SFX.CardScorch);
+
+        // Move highest cards to graveyard
+        foreach (var cardToScorch in highestCards)
+        {
+            bool targetIsPlayer = state.playerMelee.Contains(cardToScorch) ||
+                                    state.playerRanged.Contains(cardToScorch) ||
+                                    state.playerSiege.Contains(cardToScorch);
+
+            zoneManager.AddCardToGraveyard(cardToScorch, targetIsPlayer);
+        }
+
+        Debug.Log($"[AbilityManager] Scorched {highestCards.Count} card(s) with strength {maxStrength}");
+    }
+
+    /// <summary>
+    /// Scorch Row ability: Destroys the highest strength cards on the targeted row if row has over 10 score.
+    /// </summary>
+    private IEnumerator HandleScorchRow(CardData card, bool isPlayer)
+    {
+        // Get target row using the card's range
+        List<CardData> targetRow = GetOpponentRowForScorch(card, isPlayer);
+        if (targetRow == null) yield break;
+
+        // Check if total row strength is over 10
+        int totalRowStrength = targetRow.Sum(c => c.strength);
+        if (totalRowStrength < 10) yield break;
+
+        // Filter only standard cards
+        List<CardData> standardCards = targetRow.Where(c => c.type == CardDefs.Type.Standard).ToList();
+        if (standardCards.Count == 0) yield break;
+
+        // Find the maximum strength value
+        int maxStrength = standardCards.Max(c => c.strength);
+        List<CardData> highestCards = standardCards.Where(c => c.strength == maxStrength).ToList();
+
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        AudioSystem.Instance.PlaySFX(SFX.CardScorch);
+
+        // Move highest cards to graveyard
+        foreach (var cardToScorch in highestCards)
+        {
+            zoneManager.AddCardToGraveyard(cardToScorch, !isPlayer);
+        }
+
+        Debug.Log($"[AbilityManager] Scorch Row destroyed {highestCards.Count} card(s) with strength {maxStrength} on {(isPlayer ? "Opponent" : "Player")} {card.range} row");
+
+    }
+    private List<CardData> GetOpponentRowForScorch(CardData card, bool isPlayer)
+    {
+        switch (card.range)
+        {
+            case CardDefs.Range.Melee:
+                return isPlayer ? state.opponentMelee : state.playerMelee;
+            case CardDefs.Range.Ranged:
+                return isPlayer ? state.opponentRanged : state.playerRanged;
+            case CardDefs.Range.Siege:
+                return isPlayer ? state.opponentSiege : state.playerSiege;
+            default:
+                Debug.LogWarning($"[AbilityManager] Invalid range for Scorch Row on [{card.name}]");
+                return null;
         }
     }
 
