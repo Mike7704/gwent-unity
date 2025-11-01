@@ -76,7 +76,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Mardroeme:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleMardroeme(card, isPlayer));
                 break;
 
             case CardDefs.Ability.Medic:
@@ -88,7 +88,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Morph:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleMorph(card, isPlayer));
                 break;
 
             case CardDefs.Ability.Muster:
@@ -261,6 +261,61 @@ public class AbilityManager
     }
 
     /// <summary>
+    /// Mardroeme ability: Transforms all morph cards on the row into their specified targets.
+    /// </summary>
+    private IEnumerator HandleMardroeme(CardData card, bool isPlayer)
+    {
+        yield return new WaitForSeconds(abilityTriggerDelay);
+        yield return boardManager.StartCoroutine(HandleMorph(card, isPlayer));
+    }
+
+    /// <summary>
+    /// Morph ability: Transforms the morph card into another specified card when mardroeme is present on the row.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    private IEnumerator HandleMorph(CardData card, bool isPlayer)
+    {
+        if (card.ability == CardDefs.Ability.Morph && (card.target == null || card.target.Count == 0))
+        {
+            Debug.LogWarning($"[AbilityManager] Morph ability triggered but no targets defined for [{card.name}]");
+            yield break;
+        }
+
+        List<CardData> row = zoneManager.GetTargetRowList(card, isPlayer);
+
+        // Check for mardroeme on row
+        if (!row.Any(c => c.ability == CardDefs.Ability.Mardroeme)) yield break;
+
+        foreach (var morphCard in row.ToList())
+        {
+            if (morphCard.ability != CardDefs.Ability.Morph) continue;
+
+            // Find the card the morph will transform into
+            List<CardData> transformedCard = FindCardsByTargetIDs(morphCard.target, isPlayer, CardSearchArea.SummonDeck);
+            if (transformedCard.Count == 0)
+            {
+                Debug.LogWarning($"[AbilityManager] Morph target not found for [{morphCard.name}]");
+                continue;
+            }
+
+            AudioSystem.Instance.PlaySFX(SFX.CardSummon);
+
+            // Remove the morph card
+            zoneManager.DiscardCard(morphCard, isPlayer);
+
+            yield return new WaitForSeconds(abilityTriggerDelay);
+
+            // Summon the transformed card
+            foreach (var summonCard in transformedCard)
+            {
+                zoneManager.AddCardToBoard(summonCard, isPlayer);
+                yield return boardManager.StartCoroutine(ResolveCard(summonCard, isPlayer));
+            }
+        }
+    }
+
+    /// <summary>
     /// Morale ability: Boosts the strength of all allied units on its board (excluding itself).
     /// </summary>
     private IEnumerator HandleMorale()
@@ -337,6 +392,9 @@ public class AbilityManager
         }
 
         Debug.Log($"[AbilityManager] Scorched {highestCards.Count} card(s) with strength {maxStrength}");
+
+        yield return new WaitForSeconds(cardSummonDelay);
+        yield return boardManager.StartCoroutine(ResolveQueuedAvengers());
     }
 
     /// <summary>
@@ -371,6 +429,8 @@ public class AbilityManager
 
         Debug.Log($"[AbilityManager] Scorch Row destroyed {highestCards.Count} card(s) with strength {maxStrength} on {(isPlayer ? "Opponent" : "Player")} {card.range} row");
 
+        yield return new WaitForSeconds(cardSummonDelay);
+        yield return boardManager.StartCoroutine(ResolveQueuedAvengers());
     }
     private List<CardData> GetOpponentRowForScorch(CardData card, bool isPlayer)
     {
@@ -393,7 +453,7 @@ public class AbilityManager
     // -------------------------
 
     /// <summary>
-    /// Recalculates scores for all cards on the board.
+    /// Calculates scores for all cards on the board with active abilities.
     /// </summary>
     public void CalculateAllCardStrengths()
     {

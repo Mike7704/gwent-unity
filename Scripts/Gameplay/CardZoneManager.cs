@@ -252,7 +252,7 @@ public class CardZoneManager
     /// <summary>
     /// Completely removes a card from all zones and destroys its UI.
     /// </summary>
-    private void DiscardCard(CardData card, bool isPlayer)
+    public void DiscardCard(CardData card, bool isPlayer)
     {
         if (card == null) return;
 
