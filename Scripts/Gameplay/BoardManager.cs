@@ -48,7 +48,7 @@ public class BoardManager : Singleton<BoardManager>
     public string opponentFaction;
 
     // Game variables
-    private bool playerHasActed = false;
+    public bool playerHasActed = false;
 
     // Track last played card
     private CardData lastPlayedCard;
@@ -532,7 +532,6 @@ public class BoardManager : Singleton<BoardManager>
     /// <summary>
     /// Handles a card being played to the board.
     /// </summary>
-    /// <param name="cardUI"></param>
     public void HandleCardPlayed(CardData cardData, bool isPlayer)
     {
         if (isPlayer && (!state.IsPlayerTurn || !state.PlayerCanAct)) return;
@@ -540,6 +539,13 @@ public class BoardManager : Singleton<BoardManager>
         if (cardData == null)
         {
             Debug.LogError("[BoardManager] Null card played.");
+            return;
+        }
+
+        // Handle Decoy ability separately
+        if (cardData.ability == CardDefs.Ability.Decoy && isPlayer)
+        {
+            abilityManager.HandleDecoy(cardData, isPlayer);
             return;
         }
 
@@ -581,7 +587,12 @@ public class BoardManager : Singleton<BoardManager>
 
         CardData card = cardUI.cardData;
 
-        if (state.playerHand.Contains(card))
+        if (abilityManager.isDecoyActive)
+        {
+            // Decoy is active, handle decoy logic
+            abilityManager.HandleDecoySwap(card, isPlayer: true);
+        }
+        else if (state.playerHand.Contains(card))
         {
             // Card is in player's hand
             HandleCardPlayed(cardUI.cardData, isPlayer: true);
@@ -634,7 +645,7 @@ public class BoardManager : Singleton<BoardManager>
     /// <param name="isPlayer"></param>
     public void PassRound(bool isPlayer)
     {
-        if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn)
+        if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn && !abilityManager.isDecoyActive)
         {
             Debug.Log("[BoardManager] Player has passed.");
             state.PlayerHasPassed = true;

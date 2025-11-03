@@ -15,8 +15,13 @@ public class AbilityManager
 
     private HashSet<int> resolvedAbilities = new HashSet<int>(); // Track resolved abilities each turn
 
+    // Avenger
     private List<CardData> playerQueuedAvengers = new(); // Cards to summon at start of round
     private List<CardData> opponentQueuedAvengers = new(); // Cards to summon at start of round
+
+    // Decoy
+    public bool isDecoyActive = false;
+    private CardData activeDecoyCard = null;
 
     private readonly float abilityTriggerDelay = 1f;
     private readonly float cardSummonDelay = 0.3f;
@@ -64,7 +69,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Decoy:
-                // Ability
+                // Handled when decoy card is selected
                 break;
 
             case CardDefs.Ability.DrawEnemyDiscard:
@@ -225,6 +230,63 @@ public class AbilityManager
 
         yield return new WaitForSeconds(abilityTriggerDelay);
         AudioSystem.Instance.PlaySFX(SFX.CardMorale);
+    }
+
+    /// <summary>
+    /// Decoy ability: Swaps itself with a standard card on the board.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    public void HandleDecoy(CardData card, bool isPlayer)
+    {
+        // Only player can go into decoy mode
+        if (!isPlayer || isDecoyActive) return;
+
+        // Enter decoy targeting mode
+        isDecoyActive = true;
+        activeDecoyCard = card;
+
+        Debug.Log("[AbilityManager] Waiting for card to decoy...");
+    }
+    public void HandleDecoySwap(CardData card, bool isPlayer)
+    {
+        if (!isDecoyActive || activeDecoyCard == null) return;
+
+        // If the player clicks the decoy again, cancel
+        if (card == activeDecoyCard)
+        {
+            Debug.Log("[AbilityManager] Decoy cancelled.");
+            isDecoyActive = false;
+            activeDecoyCard = null;
+            return;
+        }
+
+        // Validate target card
+        if (card.type != CardDefs.Type.Standard ||
+            (isPlayer && !(state.playerMelee.Contains(card) || state.playerRanged.Contains(card) || state.playerSiege.Contains(card))) ||
+            (!isPlayer && !(state.opponentMelee.Contains(card) || state.opponentRanged.Contains(card) || state.opponentSiege.Contains(card))))
+        {
+            Debug.Log("[AbilityManager] Decoy can only target standard cards on the board.");
+            return;
+        }
+
+        Debug.Log($"[AbilityManager] Swapping [{card.name}] with [{activeDecoyCard.name}]");
+
+        AudioSystem.Instance.PlaySFX(SFX.CardDecoy);
+
+        // Apply the range of the swapped card so it goes to the same row
+        activeDecoyCard.range = card.range;
+
+        // Swap the selected card with the decoy card
+        zoneManager.AddCardToBoard(activeDecoyCard, isPlayer);
+        zoneManager.AddCardToHand(card, isPlayer);
+
+        isDecoyActive = false;
+        activeDecoyCard = null;
+
+        // End turn after decoy
+        if (isPlayer) boardManager.playerHasActed = true;
+        boardManager.SetGamePhase(GamePhase.ResolvingCard);
     }
 
     /// <summary>
