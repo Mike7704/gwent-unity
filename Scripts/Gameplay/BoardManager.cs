@@ -592,6 +592,11 @@ public class BoardManager : Singleton<BoardManager>
             // Decoy is active, handle decoy logic
             abilityManager.HandleDecoySwap(card, isPlayer: true);
         }
+        else if (abilityManager.isMedicActive)
+        {
+            // Medic is active, handle card to recover
+            abilityManager.HandleMedicRecover(card, isPlayer: true);
+        }
         else if (state.playerHand.Contains(card))
         {
             // Card is in player's hand
@@ -601,7 +606,7 @@ public class BoardManager : Singleton<BoardManager>
         {
             // Card is in graveyard
         }
-        else 
+        else
         {
             // Card is on the board
         }

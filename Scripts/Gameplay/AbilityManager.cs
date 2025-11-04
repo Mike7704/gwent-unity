@@ -23,6 +23,9 @@ public class AbilityManager
     public bool isDecoyActive = false;
     private CardData activeDecoyCard = null;
 
+    // Medic
+    public bool isMedicActive = false;
+
     private readonly float abilityTriggerDelay = 1f;
     private readonly float cardSummonDelay = 0.3f;
 
@@ -85,7 +88,7 @@ public class AbilityManager
                 break;
 
             case CardDefs.Ability.Medic:
-                // Ability
+                yield return boardManager.StartCoroutine(HandleMedic(isPlayer));
                 break;
 
             case CardDefs.Ability.Morale:
@@ -375,6 +378,59 @@ public class AbilityManager
                 yield return boardManager.StartCoroutine(ResolveCard(summonCard, isPlayer));
             }
         }
+    }
+
+    /// <summary>
+    /// Medic ability: Revives a targeted card from the graveyard to the board.
+    /// </summary>
+    private IEnumerator HandleMedic(bool isPlayer)
+    {
+        // Only player can go into medic mode
+        if (!isPlayer) yield break;
+
+        // Check that the player graveyard is not empty
+        if (state.playerGraveyard.Count == 0)
+        {
+            Debug.Log($"[AbilityManager] Player graveyard is empty.");
+            yield break;
+        }
+
+        Debug.Log("[AbilityManager] Waiting for card to recover...");
+
+        AudioSystem.Instance.PlaySFX(SFX.CardMedic);
+
+        // Still have an active medic (recovered a medic?)
+        if (isMedicActive) yield break;
+
+        // Enter medic mode
+        isMedicActive = true;
+
+        // Wait until player selects a card from the graveyard
+        yield return new WaitUntil(() => !isMedicActive);
+
+        yield return new WaitForSeconds(abilityTriggerDelay);
+    }
+    public void HandleMedicRecover(CardData card, bool isPlayer)
+    {
+        if (!isMedicActive) return;
+
+        // Validate card is in graveyard
+        List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
+        if (!graveyard.Contains(card))
+        {
+            Debug.Log("[AbilityManager] Medic can only recover cards from the graveyard.");
+            return;
+        }
+
+        Debug.Log($"[AbilityManager] Recovering [{card.name}] from graveyard.");
+
+        // Revive the targeted card
+        zoneManager.AddCardToBoard(card, isPlayer);
+        boardManager.StartCoroutine(ResolveCard(card, isPlayer));
+
+        // Exit medic mode if not recovered a medic card
+        if (card.ability != CardDefs.Ability.Medic)
+            isMedicActive = false;
     }
 
     /// <summary>
