@@ -42,6 +42,11 @@ public class BoardUI : MonoBehaviour
     public Sprite FullLifeSprite;
     public Sprite LostLifeSprite;
 
+    [Header("Row Highlights")]
+    public Image PlayerMeleeRowHighlight;
+    public Image PlayerRangedRowHighlight;
+    public Image PlayerSiegeRowHighlight;
+
     [Header("Weather")]
     public Image FrostWeatherImage;
     public Image FogWeatherImage;
@@ -136,6 +141,34 @@ public class BoardUI : MonoBehaviour
     }
 
     /// <summary>
+    /// Shows or hides row highlight for a given row.
+    /// </summary>
+    public void ShowRowHightlight(PlayerZone row, bool show)
+    {
+        switch (row)
+        {
+            case PlayerZone.MeleeRow:
+                PlayerMeleeRowHighlight.enabled = show;
+                break;
+            case PlayerZone.RangedRow:
+                PlayerRangedRowHighlight.enabled = show;
+                break;
+            case PlayerZone.SiegeRow:
+                PlayerSiegeRowHighlight.enabled = show;
+                break;
+            default:
+                Debug.LogWarning("[BoardUI] No highlight image for row: " + row);
+                break;
+        }
+    }
+    public void HideAllRowHighlights()
+    {
+        PlayerMeleeRowHighlight.enabled = false;
+        PlayerRangedRowHighlight.enabled = false;
+        PlayerSiegeRowHighlight.enabled = false;
+    }
+
+    /// <summary>
     /// Shows or hides weather effects on the board
     /// </summary>
     public void ShowWeather(string weatherAbility, bool show)
@@ -225,6 +258,13 @@ public class BoardUI : MonoBehaviour
     {
         return (index < scores.Count) ? scores[index].ToString() : "-";
     }
+}
+
+public enum PlayerZone
+{
+    MeleeRow,
+    RangedRow,
+    SiegeRow
 }
 
 public enum Banner

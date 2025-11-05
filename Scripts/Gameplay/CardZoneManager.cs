@@ -30,10 +30,6 @@ public class CardZoneManager
             return;
         }
 
-        // Reset any temporary modifications to the card
-        card.strength = card.defaultStrength;
-        card.range = card.defaultRange;
-
         if (fromZone.Contains(card))
             fromZone.Remove(card);
 
@@ -208,6 +204,10 @@ public class CardZoneManager
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
         List<CardData> hand = isPlayer ? state.playerHand : state.opponentHand;
 
+        // Reset any temporary modifications to the card
+        card.strength = card.defaultStrength;
+        card.range = card.defaultRange;
+
         MoveCard(card, fromZone, hand);
 
         Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{card.name}] to hand");
@@ -221,6 +221,10 @@ public class CardZoneManager
         // Determine which zone the card is coming from
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
         List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
+
+        // Reset any temporary modifications to the card
+        card.strength = card.defaultStrength;
+        card.range = card.defaultRange;
 
         if (card.ability == CardDefs.Ability.Avenger)
         {

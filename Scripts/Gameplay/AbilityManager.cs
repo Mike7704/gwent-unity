@@ -26,6 +26,10 @@ public class AbilityManager
     // Medic
     public bool isMedicActive = false;
 
+    // Agile
+    public bool isAgileActive = false;
+    private CardData activeAgileCard = null;
+
     private readonly float abilityTriggerDelay = 1f;
     private readonly float cardSummonDelay = 0.3f;
 
@@ -122,6 +126,52 @@ public class AbilityManager
             default:
                 break;
         }
+    }
+
+    /// <summary>
+    /// Agile: Cards can be placed on melee or ranged rows.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    public void HandleAgile(CardData card, bool isPlayer)
+    {
+        // Only player can go into agile mode
+        if (!isPlayer || isAgileActive) return;
+
+        // Enter agile mode
+        isAgileActive = true;
+        activeAgileCard = card;
+        boardManager.EnableRowZoneButton(PlayerZone.MeleeRow, true);
+        boardManager.EnableRowZoneButton(PlayerZone.RangedRow, true);
+        boardManager.EnableRowZoneButton(PlayerZone.SiegeRow, false); // Just to be safe
+
+        Debug.Log("[AbilityManager] Waiting for row selection...");
+    }
+    public void HandleAgileSelection(PlayerZone row,  bool isPlayer)
+    {
+        if (!isAgileActive || activeAgileCard == null) return;
+
+        // Apply the range for the agile card to be place on
+        activeAgileCard.range = row == PlayerZone.MeleeRow ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
+
+        zoneManager.AddCardToBoard(activeAgileCard, isPlayer);
+
+        isAgileActive = false;
+        activeAgileCard = null;
+        boardManager.DisableAllRowZoneButtons();
+
+        // End turn after playing agile card
+        if (isPlayer) boardManager.playerHasActed = true;
+        boardManager.SetGamePhase(GamePhase.ResolvingCard);
+    }
+    public void CancelAgileMode(CardData card)
+    {
+        // Called when player clicks the agile card again
+        if (!isAgileActive || activeAgileCard != card) return;
+        Debug.Log("[AbilityManager] Agile selection cancelled.");
+        isAgileActive = false;
+        activeAgileCard = null;
+        boardManager.DisableAllRowZoneButtons();
     }
 
     /// <summary>

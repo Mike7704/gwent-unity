@@ -18,6 +18,11 @@ public class BoardManager : Singleton<BoardManager>
     public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer;
     public Transform WeatherCardsContainer;
 
+    [Header("Row Click Zones")]
+    public Button PlayerMeleeRowZoneButton;
+    public Button PlayerRangedRowZoneButton;
+    public Button PlayerSiegeRowZoneButton;
+
     [Header("General UI")]
     public Button PassButton;
     public Button QuitButton;
@@ -70,6 +75,7 @@ public class BoardManager : Singleton<BoardManager>
         zoneManager.SetAbilityManager(abilityManager);
         aiOpponent = new AIOpponent(state, this);
 
+        InitialiseRowZoneButtons();
         InitialiseGeneralButtons();
 
         // Start the game loop
@@ -548,6 +554,12 @@ public class BoardManager : Singleton<BoardManager>
             abilityManager.HandleDecoy(cardData, isPlayer);
             return;
         }
+        // Handle Agile cards separately
+        if (cardData.range == CardDefs.Range.Agile && isPlayer)
+        {
+            abilityManager.HandleAgile(cardData, isPlayer);
+            return;
+        }
 
         state.PlayerCanAct = false;
 
@@ -592,6 +604,11 @@ public class BoardManager : Singleton<BoardManager>
             // Decoy is active, handle decoy logic
             abilityManager.HandleDecoySwap(card, isPlayer: true);
         }
+        else if (abilityManager.isAgileActive)
+        {
+            // Agile is active, click the agile card again to cancel
+            abilityManager.CancelAgileMode(card);
+        }
         else if (abilityManager.isMedicActive)
         {
             // Medic is active, handle card to recover
@@ -613,7 +630,67 @@ public class BoardManager : Singleton<BoardManager>
     }
 
     // -------------------------
-    // Input Handlers
+    // Row Interaction Handlers
+    // -------------------------
+
+    /// <summary>
+    /// Sets up row zone buttons listeners
+    /// </summary>
+    public void InitialiseRowZoneButtons()
+    {
+        PlayerMeleeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.MeleeRow));
+        PlayerRangedRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.RangedRow));
+        PlayerSiegeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.SiegeRow));
+
+        DisableAllRowZoneButtons();
+    }
+
+    /// <summary>
+    /// Handles clicks on row zones
+    /// </summary>
+    private void HandleRowClicked(PlayerZone row)
+    {
+        if (abilityManager.isAgileActive)
+        {
+            // Agile is active, handle row selection
+            abilityManager.HandleAgileSelection(row, isPlayer: true);
+        }
+    }
+
+    /// <summary>
+    /// Shows or hides row buttons for player to select
+    /// </summary>
+    public void EnableRowZoneButton(PlayerZone row, bool enable)
+    {
+        switch (row)
+        {
+            case PlayerZone.MeleeRow:
+                PlayerMeleeRowZoneButton.gameObject.SetActive(enable);
+                break;
+            case PlayerZone.RangedRow:
+                PlayerRangedRowZoneButton.gameObject.SetActive(enable);
+                break;
+            case PlayerZone.SiegeRow:
+                PlayerSiegeRowZoneButton.gameObject.SetActive(enable);
+                break;
+            default:
+                Debug.LogWarning("[BoardManager] No button for row: " + row);
+                break;
+        }
+
+        boardUI.ShowRowHightlight(row, enable);
+    }
+    public void DisableAllRowZoneButtons()
+    {
+        PlayerMeleeRowZoneButton.gameObject.SetActive(false);
+        PlayerRangedRowZoneButton.gameObject.SetActive(false);
+        PlayerSiegeRowZoneButton.gameObject.SetActive(false);
+
+        boardUI.HideAllRowHighlights();
+    }
+
+    // -------------------------
+    // General Input Handlers
     // -------------------------
 
     /// <summary>
@@ -650,7 +727,8 @@ public class BoardManager : Singleton<BoardManager>
     /// <param name="isPlayer"></param>
     public void PassRound(bool isPlayer)
     {
-        if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn && !abilityManager.isDecoyActive)
+        if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn &&
+            !abilityManager.isDecoyActive && !abilityManager.isMedicActive && !abilityManager.isAgileActive)
         {
             Debug.Log("[BoardManager] Player has passed.");
             state.PlayerHasPassed = true;
