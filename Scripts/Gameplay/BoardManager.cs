@@ -56,8 +56,8 @@ public class BoardManager : Singleton<BoardManager>
     public bool playerHasActed = false;
 
     // Track last played card
-    private CardData lastPlayedCard;
-    private bool lastPlayedByPlayer;
+    public CardData lastPlayedCard;
+    public bool lastPlayedByPlayer;
 
     // Time/Delay values
     private readonly float turnDelay = 1.5f;

@@ -157,17 +157,32 @@ public class AbilityManager
         zoneManager.AddCardToBoard(activeAgileCard, isPlayer);
 
         isAgileActive = false;
-        activeAgileCard = null;
         boardManager.DisableAllRowZoneButtons();
 
-        // End turn after playing agile card
-        if (isPlayer) boardManager.playerHasActed = true;
-        boardManager.SetGamePhase(GamePhase.ResolvingCard);
+        // Resolve agile card
+        if (isMedicActive)
+        {
+            // If the agile card was recovered by a medic, resolve it and end medic mode
+            isMedicActive = false;
+            boardManager.StartCoroutine(ResolveCard(activeAgileCard, isPlayer));
+        }
+        else
+        {
+            // Normal agile play
+            boardManager.lastPlayedCard = activeAgileCard;
+            boardManager.lastPlayedByPlayer = isPlayer;
+
+            // End turn after playing agile card
+            if (isPlayer) boardManager.playerHasActed = true;
+            boardManager.SetGamePhase(GamePhase.ResolvingCard);
+        }
+
+        activeAgileCard = null;
     }
     public void CancelAgileMode(CardData card)
     {
         // Called when player clicks the agile card again
-        if (!isAgileActive || activeAgileCard != card) return;
+        if (isMedicActive || !isAgileActive || activeAgileCard != card) return;
         Debug.Log("[AbilityManager] Agile selection cancelled.");
         isAgileActive = false;
         activeAgileCard = null;
@@ -455,8 +470,8 @@ public class AbilityManager
         // Enter medic mode
         isMedicActive = true;
 
-        // Wait until player selects a card from the graveyard
-        yield return new WaitUntil(() => !isMedicActive);
+        // Wait until player selects a card from the graveyard (and any agile row selection)
+        yield return new WaitUntil(() => !isMedicActive && !isAgileActive);
 
         yield return new WaitForSeconds(abilityTriggerDelay);
     }
@@ -475,12 +490,21 @@ public class AbilityManager
         Debug.Log($"[AbilityManager] Recovering [{card.name}] from graveyard.");
 
         // Revive the targeted card
-        zoneManager.AddCardToBoard(card, isPlayer);
-        boardManager.StartCoroutine(ResolveCard(card, isPlayer));
+        if (card.range == CardDefs.Range.Agile)
+        {
+            // Let player select a row
+            HandleAgile(card, isPlayer);
+        }
+        else
+        {
+            // Add card to the board
+            zoneManager.AddCardToBoard(card, isPlayer);
+            boardManager.StartCoroutine(ResolveCard(card, isPlayer));
 
-        // Exit medic mode if not recovered a medic card
-        if (card.ability != CardDefs.Ability.Medic)
-            isMedicActive = false;
+            // Exit medic mode if not recovered a medic card
+            if (card.ability != CardDefs.Ability.Medic)
+                isMedicActive = false;
+        }
     }
 
     /// <summary>
