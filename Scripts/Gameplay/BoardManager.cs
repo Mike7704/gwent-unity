@@ -14,11 +14,16 @@ public class BoardManager : Singleton<BoardManager>
     public Transform OpponentHandRow, OpponentMeleeRow, OpponentRangedRow, OpponentSiegeRow;
 
     [Header("Containers")]
+    public Transform PlayerMeleeSpecialContainer, PlayerRangedSpecialContainer, PlayerSiegeSpecialContainer;
+    public Transform OpponentMeleeSpecialContainer, OpponentRangedSpecialContainer, OpponentSiegeSpecialContainer;
     public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerSummonDeckContainer, PlayerDeckContainer, PlayerGraveyardContainer;
     public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer;
     public Transform WeatherCardsContainer;
 
     [Header("Row Click Zones")]
+    public Button PlayerMeleeSpecialZoneButton;
+    public Button PlayerRangedSpecialZoneButton;
+    public Button PlayerSiegeSpecialZoneButton;
     public Button PlayerMeleeRowZoneButton;
     public Button PlayerRangedRowZoneButton;
     public Button PlayerSiegeRowZoneButton;
@@ -261,9 +266,15 @@ public class BoardManager : Singleton<BoardManager>
         boardUI.HideAllWeather();
 
         // Move all cards on both sides to graveyards
+        zoneManager.MoveRowToGraveyard(state.playerMeleeSpecial, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.playerRangedSpecial, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.playerSiegeSpecial, isPlayer: true);
         zoneManager.MoveRowToGraveyard(state.playerMelee, isPlayer: true);
         zoneManager.MoveRowToGraveyard(state.playerRanged, isPlayer: true);
         zoneManager.MoveRowToGraveyard(state.playerSiege, isPlayer: true);
+        zoneManager.MoveRowToGraveyard(state.opponentMeleeSpecial, isPlayer: false);
+        zoneManager.MoveRowToGraveyard(state.opponentRangedSpecial, isPlayer: false);
+        zoneManager.MoveRowToGraveyard(state.opponentSiegeSpecial, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentMelee, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentRanged, isPlayer: false);
         zoneManager.MoveRowToGraveyard(state.opponentSiege, isPlayer: false);
@@ -549,13 +560,20 @@ public class BoardManager : Singleton<BoardManager>
         }
 
         // Handle Decoy ability separately
-        if (cardData.ability == CardDefs.Ability.Decoy && isPlayer)
+        if (isPlayer && cardData.ability == CardDefs.Ability.Decoy)
         {
             abilityManager.HandleDecoy(cardData, isPlayer);
             return;
         }
+        // Handle horn and mardroeme special cards separately
+        if (isPlayer && cardData.type == CardDefs.Type.Special &&
+            (cardData.ability == CardDefs.Ability.Horn || cardData.ability == CardDefs.Ability.Mardroeme))
+        {
+            abilityManager.HandleSpecialCard(cardData, isPlayer);
+            return;
+        }
         // Handle Agile cards separately
-        if (cardData.range == CardDefs.Range.Agile && isPlayer)
+        if (isPlayer && cardData.range == CardDefs.Range.Agile)
         {
             abilityManager.HandleAgile(cardData, isPlayer);
             return;
@@ -604,6 +622,11 @@ public class BoardManager : Singleton<BoardManager>
             // Decoy is active, handle decoy logic
             abilityManager.HandleDecoySwap(card, isPlayer: true);
         }
+        else if (abilityManager.isSpecialCardActive)
+        {
+            // Special horn or mardroeme card is active, click the special card again to cancel
+            abilityManager.CancelSpecialCardMode(card);
+        }
         else if (abilityManager.isAgileActive)
         {
             // Agile is active, click the agile card again to cancel
@@ -638,6 +661,10 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     public void InitialiseRowZoneButtons()
     {
+        PlayerMeleeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.MeleeSpecial));
+        PlayerRangedSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.RangedSpecial));
+        PlayerSiegeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.SiegeSpecial));
+
         PlayerMeleeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.MeleeRow));
         PlayerRangedRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.RangedRow));
         PlayerSiegeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.SiegeRow));
@@ -655,6 +682,11 @@ public class BoardManager : Singleton<BoardManager>
             // Agile is active, handle row selection
             abilityManager.HandleAgileSelection(row, isPlayer: true);
         }
+        else if (abilityManager.isSpecialCardActive)
+        {
+            // Special horn or mardroeme card is active, handle row selection
+            abilityManager.HandleSpecialCardSelection(row, isPlayer: true);
+        }
     }
 
     /// <summary>
@@ -664,6 +696,15 @@ public class BoardManager : Singleton<BoardManager>
     {
         switch (row)
         {
+            case PlayerZone.MeleeSpecial:
+                PlayerMeleeSpecialZoneButton.gameObject.SetActive(enable);
+                break;
+            case PlayerZone.RangedSpecial:
+                PlayerRangedSpecialZoneButton.gameObject.SetActive(enable);
+                break;
+            case PlayerZone.SiegeSpecial:
+                PlayerSiegeSpecialZoneButton.gameObject.SetActive(enable);
+                break;
             case PlayerZone.MeleeRow:
                 PlayerMeleeRowZoneButton.gameObject.SetActive(enable);
                 break;
@@ -682,6 +723,10 @@ public class BoardManager : Singleton<BoardManager>
     }
     public void DisableAllRowZoneButtons()
     {
+        PlayerMeleeSpecialZoneButton.gameObject.SetActive(false);
+        PlayerRangedSpecialZoneButton.gameObject.SetActive(false);
+        PlayerSiegeSpecialZoneButton.gameObject.SetActive(false);
+
         PlayerMeleeRowZoneButton.gameObject.SetActive(false);
         PlayerRangedRowZoneButton.gameObject.SetActive(false);
         PlayerSiegeRowZoneButton.gameObject.SetActive(false);
@@ -763,16 +808,6 @@ public class BoardManager : Singleton<BoardManager>
         boardUI.UpdateUI(state);
     }
 
-    /// <summary>
-    /// Shows or hides weather effects on the board.
-    /// </summary>
-    /// <param name="ability"></param>
-    /// <param name="show"></param>
-    public void ShowWeather(string ability, bool show)
-    {
-        boardUI.ShowWeather(ability, show);
-    }
-
     // -------------------------
     // Quit Game
     // -------------------------
@@ -833,9 +868,15 @@ public class BoardManager : Singleton<BoardManager>
         state.opponentDeck.Clear();
         state.playerHand.Clear();
         state.opponentHand.Clear();
+        state.playerMeleeSpecial.Clear();
+        state.playerRangedSpecial.Clear();
+        state.playerSiegeSpecial.Clear();
         state.playerMelee.Clear();
         state.playerRanged.Clear();
         state.playerSiege.Clear();
+        state.opponentMeleeSpecial.Clear();
+        state.opponentRangedSpecial.Clear();
+        state.opponentSiegeSpecial.Clear();
         state.opponentMelee.Clear();
         state.opponentRanged.Clear();
         state.opponentSiege.Clear();

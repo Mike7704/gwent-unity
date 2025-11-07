@@ -37,6 +37,16 @@ public class BoardState
     public List<CardData> playerGraveyard = new();
     public List<CardData> opponentGraveyard = new();
 
+    // Player special cards
+    public List<CardData> playerMeleeSpecial = new();
+    public List<CardData> playerRangedSpecial = new();
+    public List<CardData> playerSiegeSpecial = new();
+
+    // Opponent special cards
+    public List<CardData> opponentMeleeSpecial = new();
+    public List<CardData> opponentRangedSpecial = new();
+    public List<CardData> opponentSiegeSpecial = new();
+
     // Player rows
     public List<CardData> playerMelee = new();
     public List<CardData> playerRanged = new();

@@ -19,6 +19,10 @@ public class AbilityManager
     private List<CardData> playerQueuedAvengers = new(); // Cards to summon at start of round
     private List<CardData> opponentQueuedAvengers = new(); // Cards to summon at start of round
 
+    // Special horn or mardroeme card
+    public bool isSpecialCardActive = false;
+    private CardData activeSpecialCard = null;
+
     // Decoy
     public bool isDecoyActive = false;
     private CardData activeDecoyCard = null;
@@ -129,6 +133,76 @@ public class AbilityManager
     }
 
     /// <summary>
+    /// Special cards can be placed on the left side of the board. One per row.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    public void HandleSpecialCard(CardData card, bool isPlayer)
+    {
+        // Only player can go into special mode
+        if (!isPlayer || isSpecialCardActive) return;
+
+        // Enter special card mode
+        isSpecialCardActive = true;
+        activeSpecialCard = card;
+        boardManager.EnableRowZoneButton(PlayerZone.MeleeSpecial, !state.playerMeleeSpecial.Any());
+        boardManager.EnableRowZoneButton(PlayerZone.RangedSpecial, !state.playerRangedSpecial.Any());
+        boardManager.EnableRowZoneButton(PlayerZone.SiegeSpecial, !state.playerSiegeSpecial.Any());
+
+        Debug.Log("[AbilityManager] Waiting for special row selection...");
+    }
+    public void HandleSpecialCardSelection(PlayerZone row, bool isPlayer)
+    {
+        if (!isSpecialCardActive || activeSpecialCard == null) return;
+
+        // Apply the row for the special card to be place on
+        switch (row)
+        {
+            case PlayerZone.MeleeSpecial:
+                if (state.playerMeleeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                activeSpecialCard.range = CardDefs.Range.Melee;
+                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                break;
+
+            case PlayerZone.RangedSpecial:
+                if (state.playerRangedSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                activeSpecialCard.range = CardDefs.Range.Ranged;
+                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                break;
+
+            case PlayerZone.SiegeSpecial:
+                if (state.playerSiegeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                activeSpecialCard.range = CardDefs.Range.Siege;
+                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                break;
+
+            default:
+                Debug.LogWarning("Invalid special zone.");
+                return;
+        }
+
+        boardManager.lastPlayedCard = activeSpecialCard;
+        boardManager.lastPlayedByPlayer = isPlayer;
+
+        activeSpecialCard = null;
+        isSpecialCardActive = false;
+        boardManager.DisableAllRowZoneButtons();
+
+        // End turn after playing special card
+        if (isPlayer) boardManager.playerHasActed = true;
+        boardManager.SetGamePhase(GamePhase.ResolvingCard);
+    }
+    public void CancelSpecialCardMode(CardData card)
+    {
+        // Called when player clicks the active special card again
+        if (!isSpecialCardActive || activeSpecialCard != card) return;
+        Debug.Log("[AbilityManager] Special selection cancelled.");
+        activeSpecialCard = null;
+        isSpecialCardActive = false;
+        boardManager.DisableAllRowZoneButtons();
+    }
+
+    /// <summary>
     /// Agile: Cards can be placed on melee or ranged rows.
     /// </summary>
     /// <param name="card"></param>
@@ -200,14 +274,14 @@ public class AbilityManager
         {
             case CardDefs.Ability.Clear:
                 AudioSystem.Instance.PlaySFX(SFX.WeatherClear);
-                boardManager.ShowWeather(CardDefs.Ability.Clear, show: true);
+                boardManager.boardUI.ShowWeather(CardDefs.Ability.Clear, show: true);
                 yield return new WaitForSeconds(abilityTriggerDelay);
                 zoneManager.MoveRowToGraveyard(state.weatherCards, isPlayer: false);
-                boardManager.ShowWeather(CardDefs.Ability.Frost, show: false);
-                boardManager.ShowWeather(CardDefs.Ability.Fog, show: false);
-                boardManager.ShowWeather(CardDefs.Ability.Rain, show: false);
+                boardManager.boardUI.ShowWeather(CardDefs.Ability.Frost, show: false);
+                boardManager.boardUI.ShowWeather(CardDefs.Ability.Fog, show: false);
+                boardManager.boardUI.ShowWeather(CardDefs.Ability.Rain, show: false);
                 yield return new WaitForSeconds(abilityTriggerDelay);
-                boardManager.ShowWeather(CardDefs.Ability.Clear, show: false);
+                boardManager.boardUI.ShowWeather(CardDefs.Ability.Clear, show: false);
                 break;
             case CardDefs.Ability.Frost:
                 AudioSystem.Instance.PlaySFX(SFX.WeatherFrost);
@@ -313,6 +387,9 @@ public class AbilityManager
         // Enter decoy targeting mode
         isDecoyActive = true;
         activeDecoyCard = card;
+        boardManager.boardUI.ShowRowHightlight(PlayerZone.MeleeRow, IsStandardCardOnRow(state.playerMelee));
+        boardManager.boardUI.ShowRowHightlight(PlayerZone.RangedRow, IsStandardCardOnRow(state.playerRanged));
+        boardManager.boardUI.ShowRowHightlight(PlayerZone.SiegeRow, IsStandardCardOnRow(state.playerSiege));
 
         Debug.Log("[AbilityManager] Waiting for card to decoy...");
     }
@@ -326,6 +403,7 @@ public class AbilityManager
             Debug.Log("[AbilityManager] Decoy cancelled.");
             isDecoyActive = false;
             activeDecoyCard = null;
+            boardManager.boardUI.HideAllRowHighlights();
             return;
         }
 
@@ -351,6 +429,7 @@ public class AbilityManager
 
         isDecoyActive = false;
         activeDecoyCard = null;
+        boardManager.boardUI.HideAllRowHighlights();
 
         // End turn after decoy
         if (isPlayer) boardManager.playerHasActed = true;
@@ -412,10 +491,15 @@ public class AbilityManager
             yield break;
         }
 
+        List<CardData> special = zoneManager.GetTargetSpecialList(card, isPlayer);
         List<CardData> row = zoneManager.GetTargetRowList(card, isPlayer);
 
         // Check for mardroeme on row
-        if (!row.Any(c => c.ability == CardDefs.Ability.Mardroeme)) yield break;
+        if (!special.Any(c => c.ability == CardDefs.Ability.Mardroeme) &&
+            !row.Any(c => c.ability == CardDefs.Ability.Mardroeme))
+        {
+            yield break;
+        }
 
         foreach (var morphCard in row.ToList())
         {
@@ -677,12 +761,12 @@ public class AbilityManager
         ApplyMoraleToRow(state.opponentSiege);
 
         // Apply horn boosts
-        ApplyHornToRow(state.playerMelee);
-        ApplyHornToRow(state.playerRanged);
-        ApplyHornToRow(state.playerSiege);
-        ApplyHornToRow(state.opponentMelee);
-        ApplyHornToRow(state.opponentRanged);
-        ApplyHornToRow(state.opponentSiege);
+        ApplyHornToRow(state.playerMeleeSpecial, state.playerMelee);
+        ApplyHornToRow(state.playerRangedSpecial, state.playerRanged);
+        ApplyHornToRow(state.playerSiegeSpecial, state.playerSiege);
+        ApplyHornToRow(state.opponentMeleeSpecial, state.opponentMelee);
+        ApplyHornToRow(state.opponentRangedSpecial, state.opponentRanged);
+        ApplyHornToRow(state.opponentSiegeSpecial, state.opponentSiege);
 
         CardManager.Instance.RefreshAllCardUI();
     }
@@ -715,19 +799,19 @@ public class AbilityManager
         // Apply frost to melee rows
         if (applyFrost || applyNature || applyWhiteFrost)
         {
-            boardManager.ShowWeather(CardDefs.Ability.Frost, show: true);
+            boardManager.boardUI.ShowWeather(CardDefs.Ability.Frost, show: true);
             ApplyWeatherEffectToRow(state.playerMelee, state.opponentMelee);
         }
         // Apply fog to ranged rows
         if (applyFog || applyStorm || applyWhiteFrost)
         {
-            boardManager.ShowWeather(CardDefs.Ability.Fog, show: true);
+            boardManager.boardUI.ShowWeather(CardDefs.Ability.Fog, show: true);
             ApplyWeatherEffectToRow(state.playerRanged, state.opponentRanged);
         }
         // Apply rain to siege rows
         if (applyRain || applyStorm || applyNature)
         {
-            boardManager.ShowWeather(CardDefs.Ability.Rain, show: true);
+            boardManager.boardUI.ShowWeather(CardDefs.Ability.Rain, show: true);
             ApplyWeatherEffectToRow(state.playerSiege, state.opponentSiege);
         }
     }
@@ -796,12 +880,15 @@ public class AbilityManager
     /// <summary>
     /// Applies horn boost to all cards on a given row.
     /// </summary>
+    /// <param name="specialContainer"></param>
     /// <param name="row"></param>
-    private void ApplyHornToRow(List<CardData> row)
+    private void ApplyHornToRow(List<CardData> specialContainer, List<CardData> row)
     {
         if (row == null || row.Count == 0) return;
 
-        bool isHornOnRow = row.Any(c => c.ability == CardDefs.Ability.Horn);
+        bool isHornOnRow = specialContainer.Any(c => c.ability == CardDefs.Ability.Horn) ||
+                           row.Any(c => c.ability == CardDefs.Ability.Horn);
+
         if (!isHornOnRow) return;
 
         foreach (var card in row)
@@ -871,6 +958,14 @@ public class AbilityManager
   
         // Remove any duplicates
         return result.Distinct().ToList();
+    }
+
+    /// <summary>
+    /// Returns true if there is at least one standard card on the given row.
+    /// </summary>
+    private bool IsStandardCardOnRow(List<CardData> row)
+    {
+        return row.Any(c => c.type == CardDefs.Type.Standard);
     }
 
     /// <summary>

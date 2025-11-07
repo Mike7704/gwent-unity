@@ -43,6 +43,9 @@ public class BoardUI : MonoBehaviour
     public Sprite LostLifeSprite;
 
     [Header("Row Highlights")]
+    public Image PlayerMeleeSpecialHighlight;
+    public Image PlayerRangedSpecialHighlight;
+    public Image PlayerSiegeSpecialHighlight;
     public Image PlayerMeleeRowHighlight;
     public Image PlayerRangedRowHighlight;
     public Image PlayerSiegeRowHighlight;
@@ -147,6 +150,15 @@ public class BoardUI : MonoBehaviour
     {
         switch (row)
         {
+            case PlayerZone.MeleeSpecial:
+                PlayerMeleeSpecialHighlight.enabled = show;
+                break;
+            case PlayerZone.RangedSpecial:
+                PlayerRangedSpecialHighlight.enabled = show;
+                break;
+            case PlayerZone.SiegeSpecial:
+                PlayerSiegeSpecialHighlight.enabled = show;
+                break;
             case PlayerZone.MeleeRow:
                 PlayerMeleeRowHighlight.enabled = show;
                 break;
@@ -163,6 +175,9 @@ public class BoardUI : MonoBehaviour
     }
     public void HideAllRowHighlights()
     {
+        PlayerMeleeSpecialHighlight.enabled = false;
+        PlayerRangedSpecialHighlight.enabled = false;
+        PlayerSiegeSpecialHighlight.enabled = false;
         PlayerMeleeRowHighlight.enabled = false;
         PlayerRangedRowHighlight.enabled = false;
         PlayerSiegeRowHighlight.enabled = false;
@@ -262,6 +277,9 @@ public class BoardUI : MonoBehaviour
 
 public enum PlayerZone
 {
+    MeleeSpecial,
+    RangedSpecial,
+    SiegeSpecial,
     MeleeRow,
     RangedRow,
     SiegeRow

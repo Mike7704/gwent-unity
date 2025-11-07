@@ -72,14 +72,32 @@ public class CardZoneManager
     {
         Transform[] allRows =
         {
+            boardManager.PlayerLeaderContainer,
+            boardManager.PlayerRecentCardContainer,
+            //boardManager.PlayerSummonDeckContainer,
+            //boardManager.PlayerDeckContainer,
+            boardManager.PlayerGraveyardContainer,
+            boardManager.PlayerMeleeSpecialContainer,
+            boardManager.PlayerRangedSpecialContainer,
+            boardManager.PlayerSiegeSpecialContainer,
             boardManager.PlayerHandRow,
             boardManager.PlayerMeleeRow,
             boardManager.PlayerRangedRow,
             boardManager.PlayerSiegeRow,
+
+            boardManager.OpponentLeaderContainer,
+            boardManager.OpponentRecentCardContainer,
+            //boardManager.OpponentSummonDeckContainer,
+            //boardManager.OpponentDeckContainer,
+            boardManager.OpponentGraveyardContainer,
+            boardManager.OpponentMeleeSpecialContainer,
+            boardManager.OpponentRangedSpecialContainer,
+            boardManager.OpponentSiegeSpecialContainer,
             boardManager.OpponentHandRow,
             boardManager.OpponentMeleeRow,
             boardManager.OpponentRangedRow,
             boardManager.OpponentSiegeRow,
+
             boardManager.WeatherCardsContainer
         };
 
@@ -126,10 +144,23 @@ public class CardZoneManager
             AddWeatherCard(card, isPlayer);
             return;
         }
+        if (card.type == CardDefs.Type.Special)
+        {
+            Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} played [{card.name}]");
+            AddCardToGraveyard(card, isPlayer);
+            return;
+        }
 
         // Determine which zone the card is coming from
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
         List<CardData> targetRowList = GetTargetRowList(card, isPlayer);
+
+        if (targetRowList == null)
+        {
+            Debug.Log($"[CardZoneManager] Discarding [{card.name}] as target row is null.");
+            DiscardCard(card, isPlayer);
+            return;
+        }
 
         MoveCard(card, fromZone, targetRowList);
 
@@ -144,6 +175,7 @@ public class CardZoneManager
         // Clear weather removes all weather effects
         if (card.ability == CardDefs.Ability.Clear)
         {
+            Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} played [{card.name}]");
             AddCardToGraveyard(card, isPlayer);
             return;
         }
@@ -193,6 +225,27 @@ public class CardZoneManager
         MoveCard(card, fromZone, weatherList);
 
         Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{card.name}] to weather row");
+    }
+
+    /// <summary>
+    /// Adds a special Horn or Mardroeme card to the side of the board.
+    /// </summary>
+    public void AddSpecialCard(CardData specialCard, bool isPlayer)
+    {
+        List<CardData> hand = isPlayer ? state.playerHand : state.opponentHand;
+        List<CardData> targetRowList = GetTargetSpecialList(specialCard, isPlayer);
+
+        if (targetRowList == null) return;
+
+        if (targetRowList.Any())
+        {
+            Debug.LogWarning($"[CardZoneManager] Cannot add special card [{specialCard.name}] — special slot already occupied.");
+            return;
+        }
+
+        MoveCard(specialCard, hand, targetRowList);
+
+        Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{specialCard.name}] to {specialCard.range} special row");
     }
 
     /// <summary>
@@ -269,6 +322,7 @@ public class CardZoneManager
          {
             if (cardUI != null)
             {
+                cardUI.transform.SetParent(null);
                 cardUI.gameObject.SetActive(false);
                 UnityEngine.Object.Destroy(cardUI.gameObject);
             }
@@ -308,8 +362,30 @@ public class CardZoneManager
                 return addToPlayerRow ? state.playerSiege : state.opponentSiege;
             default:
                 // Fallback if data is missing or invalid
-                Debug.LogWarning($"[BoardManager] Unknown range {card.range} for card [{card.name}] — defaulting to melee row.");
-                return addToPlayerRow ? state.playerMelee : state.opponentMelee;
+                Debug.LogWarning($"[CardZoneManager] Unknown range {card.range} for card [{card.name}]");
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the special target list based on card range and player/opponent.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <param name="isPlayer"></param>
+    /// <returns></returns>
+    public List<CardData> GetTargetSpecialList(CardData card, bool isPlayer)
+    {
+        switch (card.range)
+        {
+            case CardDefs.Range.Melee:
+                return isPlayer ? state.playerMeleeSpecial : state.opponentMeleeSpecial;
+            case CardDefs.Range.Ranged:
+                return isPlayer ? state.playerRangedSpecial : state.opponentRangedSpecial;
+            case CardDefs.Range.Siege:
+                return isPlayer ? state.playerSiegeSpecial : state.opponentSiegeSpecial;
+            default:
+                Debug.LogWarning($"[CardZoneManager] Unknown range {card.range} for card [{card.name}]");
+                return null;
         }
     }
 
@@ -324,6 +400,9 @@ public class CardZoneManager
         if (row == state.playerMelee) return boardManager.PlayerMeleeRow;
         if (row == state.playerRanged) return boardManager.PlayerRangedRow;
         if (row == state.playerSiege) return boardManager.PlayerSiegeRow;
+        if (row == state.playerMeleeSpecial) return boardManager.PlayerMeleeSpecialContainer;
+        if (row == state.playerRangedSpecial) return boardManager.PlayerRangedSpecialContainer;
+        if (row == state.playerSiegeSpecial) return boardManager.PlayerSiegeSpecialContainer;
         if (row == state.playerDeck) return boardManager.PlayerDeckContainer;
         if (row == state.playerSummonDeck) return boardManager.PlayerSummonDeckContainer;
         if (row == state.playerGraveyard) return boardManager.PlayerGraveyardContainer;
@@ -332,13 +411,16 @@ public class CardZoneManager
         if (row == state.opponentMelee) return boardManager.OpponentMeleeRow;
         if (row == state.opponentRanged) return boardManager.OpponentRangedRow;
         if (row == state.opponentSiege) return boardManager.OpponentSiegeRow;
+        if (row == state.opponentMeleeSpecial) return boardManager.OpponentMeleeSpecialContainer;
+        if (row == state.opponentRangedSpecial) return boardManager.OpponentRangedSpecialContainer;
+        if (row == state.opponentSiegeSpecial) return boardManager.OpponentSiegeSpecialContainer;
         if (row == state.opponentDeck) return boardManager.OpponentDeckContainer;
         if (row == state.opponentSummonDeck) return boardManager.OpponentSummonDeckContainer;
         if (row == state.opponentGraveyard) return boardManager.OpponentGraveyardContainer;
 
         if (row == state.weatherCards) return boardManager.WeatherCardsContainer;
 
-        Debug.LogWarning($"[BoardManager] Unknown row: {row}");
+        Debug.LogWarning($"[CardZoneManager] Unknown row: {row}");
         return null;
     }
 
@@ -355,6 +437,9 @@ public class CardZoneManager
             if (state.playerMelee.Contains(card)) return state.playerMelee;
             if (state.playerRanged.Contains(card)) return state.playerRanged;
             if (state.playerSiege.Contains(card)) return state.playerSiege;
+            if (state.playerMeleeSpecial.Contains(card)) return state.playerMeleeSpecial;
+            if (state.playerRangedSpecial.Contains(card)) return state.playerRangedSpecial;
+            if (state.playerSiegeSpecial.Contains(card)) return state.playerSiegeSpecial;
             if (state.playerSummonDeck.Contains(card)) return state.playerSummonDeck;
         }
         else
@@ -365,6 +450,9 @@ public class CardZoneManager
             if (state.opponentMelee.Contains(card)) return state.opponentMelee;
             if (state.opponentRanged.Contains(card)) return state.opponentRanged;
             if (state.opponentSiege.Contains(card)) return state.opponentSiege;
+            if (state.opponentMeleeSpecial.Contains(card)) return state.opponentMeleeSpecial;
+            if (state.opponentRangedSpecial.Contains(card)) return state.opponentRangedSpecial;
+            if (state.opponentSiegeSpecial.Contains(card)) return state.opponentSiegeSpecial;
             if (state.opponentSummonDeck.Contains(card)) return state.opponentSummonDeck;
         }
 
@@ -381,7 +469,15 @@ public class CardZoneManager
     /// <param name="zone"></param>
     private void PlayCardSFX(CardData card, List<CardData> zone)
     {
-        if (zone == state.playerMelee || zone == state.opponentMelee)
+        if (zone == state.playerDeck)
+        {
+            AudioSystem.Instance.PlaySFX(SFX.RedrawCard);
+        }
+        else if (card.type == CardDefs.Type.Special)
+        {
+            return;
+        }
+        else if (zone == state.playerMelee || zone == state.opponentMelee)
         {
             if (card.type == CardDefs.Type.Hero)
                 AudioSystem.Instance.PlaySFX(SFX.CardHero);
@@ -401,10 +497,6 @@ public class CardZoneManager
                 AudioSystem.Instance.PlaySFX(SFX.CardHero);
             else
                 AudioSystem.Instance.PlaySFX(SFX.CardSiege);
-        }
-        else if (zone == state.playerDeck)
-        {
-            AudioSystem.Instance.PlaySFX(SFX.RedrawCard);
         }
     }
 
