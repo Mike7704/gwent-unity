@@ -476,15 +476,12 @@ public class BoardManager : Singleton<BoardManager>
 
             // Deep clone so each card is unique
             CardData newCard = originalCard.Clone();
-            if (!isPlayer)
+            if (originalCard.id < 0)
+                newCard.id = originalCard.id; // These are special horn and mardroeme cards (keep negative IDs)
+            else if (!isPlayer)
                 newCard.id += 1000; // Offset opponent card IDs to avoid clashes
             copiedDeck.Add(newCard);
-
-            // Create hidden UI
-            CardUI cardUI = CardManager.Instance.CreateCard(newCard, cropped: true, summonContainer);
-            cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
-            cardUIMap[newCard] = cardUI;
-            SetupCardInteraction(cardUI);
+            CreateAndRegisterCard(newCard, summonContainer);
         }
 
         if (isPlayer)
@@ -511,18 +508,24 @@ public class BoardManager : Singleton<BoardManager>
             if (!isPlayer)
                 newCard.id += 1000; // Offset opponent card IDs to avoid clashes
             copiedDeck.Add(newCard);
-
-            // Create UI for each card and store the mapping
-            CardUI cardUI = CardManager.Instance.CreateCard(newCard, cropped: true, deckContainer);
-            cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
-            cardUIMap[newCard] = cardUI;
-            SetupCardInteraction(cardUI);
+            CreateAndRegisterCard(newCard, deckContainer);
         }
 
         if (isPlayer)
             state.playerDeck = copiedDeck;
         else
             state.opponentDeck = copiedDeck;
+    }
+
+    /// <summary>
+    /// Create UI for a given card and store the mapping
+    /// </summary>
+    public void CreateAndRegisterCard(CardData card, Transform deckContainer)
+    {
+        CardUI cardUI = CardManager.Instance.CreateCard(card, cropped: true, deckContainer);
+        cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
+        cardUIMap[card] = cardUI;
+        SetupCardInteraction(cardUI);
     }
 
     /// <summary>

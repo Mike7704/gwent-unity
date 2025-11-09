@@ -232,7 +232,7 @@ public class CardZoneManager
     /// </summary>
     public void AddSpecialCard(CardData specialCard, bool isPlayer)
     {
-        List<CardData> hand = isPlayer ? state.playerHand : state.opponentHand;
+        List<CardData> fromZone = GetZoneContainingCard(specialCard, isPlayer);
         List<CardData> targetRowList = GetTargetSpecialList(specialCard, isPlayer);
 
         if (targetRowList == null) return;
@@ -243,7 +243,7 @@ public class CardZoneManager
             return;
         }
 
-        MoveCard(specialCard, hand, targetRowList);
+        MoveCard(specialCard, fromZone, targetRowList);
 
         Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{specialCard.name}] to {specialCard.range} special row");
     }
