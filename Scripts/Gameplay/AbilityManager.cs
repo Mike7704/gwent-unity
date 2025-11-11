@@ -761,12 +761,20 @@ public class AbilityManager
         ApplyMoraleToRow(state.opponentSiege);
 
         // Apply horn boosts
-        ApplyHornToRow(state.playerMeleeSpecial, state.playerMelee, isPlayer: true);
-        ApplyHornToRow(state.playerRangedSpecial, state.playerRanged, isPlayer: true);
-        ApplyHornToRow(state.playerSiegeSpecial, state.playerSiege, isPlayer: true);
-        ApplyHornToRow(state.opponentMeleeSpecial, state.opponentMelee, isPlayer: false);
-        ApplyHornToRow(state.opponentRangedSpecial, state.opponentRanged, isPlayer: false);
-        ApplyHornToRow(state.opponentSiegeSpecial, state.opponentSiege, isPlayer: false);
+        ApplyHornToRow(state.playerMeleeSpecial, state.playerMelee);
+        ApplyHornToRow(state.playerRangedSpecial, state.playerRanged);
+        ApplyHornToRow(state.playerSiegeSpecial, state.playerSiege);
+        ApplyHornToRow(state.opponentMeleeSpecial, state.opponentMelee);
+        ApplyHornToRow(state.opponentRangedSpecial, state.opponentRanged);
+        ApplyHornToRow(state.opponentSiegeSpecial, state.opponentSiege);
+
+        // If horn or mardroeme unit is active, ensure a special card is present
+        EnsureSpecialCard(state.playerMeleeSpecial, state.playerMelee, isPlayer: true);
+        EnsureSpecialCard(state.playerRangedSpecial, state.playerRanged, isPlayer: true);
+        EnsureSpecialCard(state.playerSiegeSpecial, state.playerSiege, isPlayer: true);
+        EnsureSpecialCard(state.opponentMeleeSpecial, state.opponentMelee, isPlayer: false);
+        EnsureSpecialCard(state.opponentRangedSpecial, state.opponentRanged, isPlayer: false);
+        EnsureSpecialCard(state.opponentSiegeSpecial, state.opponentSiege, isPlayer: false);
 
         CardManager.Instance.RefreshAllCardUI();
     }
@@ -882,7 +890,7 @@ public class AbilityManager
     /// </summary>
     /// <param name="specialContainer"></param>
     /// <param name="row"></param>
-    private void ApplyHornToRow(List<CardData> specialContainer, List<CardData> row, bool isPlayer)
+    private void ApplyHornToRow(List<CardData> specialContainer, List<CardData> row)
     {
         if (row == null) return;
 
@@ -890,9 +898,6 @@ public class AbilityManager
                             row.Any(c => c.ability == CardDefs.Ability.Horn);
 
         if (!isHornActive) return;
-
-        // If horn is active, ensure a special horn card is present
-        EnsureHornSpecialCard(specialContainer, row, isPlayer);
 
         // Apply horn boost
         foreach (var card in row)
@@ -973,43 +978,60 @@ public class AbilityManager
     }
 
     /// <summary>
-    /// Ensures that a horn special card is present if a unit horn is on the row.
+    /// Ensures that a horn or mardroeme special card is present if its unit is on the row.
     /// </summary>
     /// <param name="specialContainer"></param>
     /// <param name="row"></param>
     /// <param name="isPlayer"></param>
-    private void EnsureHornSpecialCard(List<CardData> specialContainer, List<CardData> row, bool isPlayer)
+    private void EnsureSpecialCard(List<CardData> specialContainer, List<CardData> row, bool isPlayer)
     {
-        bool isSpecialHornOnRow = specialContainer.Any(c => c.ability == CardDefs.Ability.Horn);
-        bool isHornOnRow = row.Any(c => c.ability == CardDefs.Ability.Horn);
+        if (row == null || specialContainer == null) return;
 
-        // Handle unit horn summoning a horn special card
-        if (isHornOnRow && !isSpecialHornOnRow)
+        // Check for existing special card and unit cards on the row
+        bool isSpecialCardActive = specialContainer.Any();
+        bool isHornUnitOnRow = row.Any(c => c.ability == CardDefs.Ability.Horn);
+        bool isMardroemeUnitOnRow = row.Any(c => c.ability == CardDefs.Ability.Mardroeme);
+
+        // Determine if we need to summon or remove special cards
+        bool shouldSummonHorn = isHornUnitOnRow && !isSpecialCardActive;
+        bool shouldSummonMardroeme = isMardroemeUnitOnRow && !isSpecialCardActive;
+
+        // Handle unit card summoning a special card
+        if (shouldSummonHorn || shouldSummonMardroeme)
         {
-            // Get the horn special card from summon deck with an ID of -1
+            // Get the special card from summon deck
             Transform summonContainer = isPlayer ? boardManager.PlayerSummonDeckContainer : boardManager.OpponentSummonDeckContainer;
             List<CardData> summonDeck = isPlayer ? state.playerSummonDeck : state.opponentSummonDeck;
-            CardData hornSpecialCard = summonDeck.First(c => c.id == -1);
 
-            if (hornSpecialCard == null)
+            int specialCardId = shouldSummonHorn ? -1 : -2; // horn id = -1, mardroeme id = -2
+            string ability = shouldSummonHorn ? CardDefs.Ability.Horn : CardDefs.Ability.Mardroeme;
+            CardData specialCardFromSummonDeck = summonDeck.FirstOrDefault(c => c.id == specialCardId);
+
+            if (specialCardFromSummonDeck == null)
             {
-                Debug.LogWarning("[AbilityManager] No Horn special card in summon deck.");
+                Debug.LogWarning($"[AbilityManager] No {ability} special card in summon deck.");
                 return;
             }
 
-            // Copy the horn special card so we keep original in summon deck for other uses
-            CardData newHornSpecialCard = hornSpecialCard.Clone();
-            newHornSpecialCard.range = row.First(c => c.ability == CardDefs.Ability.Horn).range; // Match the range of the unit horn
-            boardManager.CreateAndRegisterCard(newHornSpecialCard, summonContainer);
-            summonDeck.Add(newHornSpecialCard);
+            // Copy the special card so we keep original in summon deck for other uses
+            CardData newSpecialCard = specialCardFromSummonDeck.Clone();
+            newSpecialCard.range = row.First(c => c.ability == ability).range; // Match the range of the unit card
+            boardManager.CreateAndRegisterCard(newSpecialCard, summonContainer);
+            summonDeck.Add(newSpecialCard);
 
-            // Add the horn special card to the special container
-            zoneManager.AddSpecialCard(newHornSpecialCard, isPlayer);
+            // Add the special card to the special container
+            zoneManager.AddSpecialCard(newSpecialCard, isPlayer);
         }
-        else if (!isHornOnRow && isSpecialHornOnRow && specialContainer.First().id == -1)
+        else if (isSpecialCardActive)
         {
-            // Remove horn special card (summoned by unit) if unit horn card was removed (by scorch or decoy)
-            zoneManager.MoveRowToGraveyard(specialContainer, isPlayer);
+            // Remove special card if no matching unit remains
+            int specialId = specialContainer.First().id;
+
+            bool shouldRemoveHorn = specialId == -1 && !isHornUnitOnRow;
+            bool shouldRemoveMardroeme = specialId == -2 && !isMardroemeUnitOnRow;
+
+            if (shouldRemoveHorn || shouldRemoveMardroeme)
+                zoneManager.MoveRowToGraveyard(specialContainer, isPlayer);
         }
     }
 
