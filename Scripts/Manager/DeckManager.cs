@@ -6,6 +6,7 @@ using UnityEngine;
 public class SavedDeck
 {
     public string faction;
+    public int leaderID;
     public List<int> cardIDs = new List<int>();
 }
 
@@ -16,8 +17,11 @@ public class DeckManager : Singleton<DeckManager>
 {
     public string PlayerFaction { get; private set; }
     public string NPCFaction { get; private set; }
+    public CardData PlayerLeader { get; private set; } = new CardData();
+    public CardData NPCLeader { get; private set; } = new CardData();
     public List<CardData> PlayerDeck { get; private set; } = new List<CardData>();
     public List<CardData> NPCDeck { get; private set; } = new List<CardData>();
+
 
     private const string SaveKey = "PlayerDeck";
 
@@ -42,6 +46,23 @@ public class DeckManager : Singleton<DeckManager>
     }
 
     /// <summary>
+    /// Set the player leader card.
+    /// </summary>
+    /// <param name="leader"></param>
+    public void SetPlayerLeader(CardData leader)
+    {
+        if (leader == null)
+        {
+            Debug.LogWarning("[DeckManager] Tried to set null leader.");
+            return;
+        }
+
+        PlayerLeader = leader;
+        OnDeckChanged?.Invoke();
+        Debug.Log($"[DeckManager] Leader set to [{leader.name}]");
+    }
+
+    /// <summary>
     /// Adds a card to the deck if it's valid and not already included.
     /// </summary>
     public void AddCard(CardData card)
@@ -55,7 +76,7 @@ public class DeckManager : Singleton<DeckManager>
         // Restrict to faction (except neutral and special cards)
         if (!IsCardValidForPlayerDeck(card))
         {
-            Debug.Log($"[DeckManager] Card {card.name} doesn't belong to faction {PlayerFaction}.");
+            Debug.Log($"[DeckManager] Card [{card.name}] doesn't belong to faction {PlayerFaction}.");
             return;
         }
 
@@ -78,8 +99,6 @@ public class DeckManager : Singleton<DeckManager>
             OnDeckChanged?.Invoke();
         }
     }
-
-    public bool ContainsCard(CardData card) => PlayerDeck.Contains(card);
 
     /// <summary>
     /// Clears all cards from the specified deck.
@@ -170,7 +189,8 @@ public class DeckManager : Singleton<DeckManager>
 
         SavedDeck save = new()
         {
-            faction = PlayerFaction
+            faction = PlayerFaction,
+            leaderID = PlayerLeader != null ? PlayerLeader.id : -1
         };
 
         foreach (var card in PlayerDeck)
@@ -205,6 +225,11 @@ public class DeckManager : Singleton<DeckManager>
         }
 
         PlayerFaction = saved.faction;
+
+        var leaderCard = CardDatabase.Instance.GetCardById(saved.leaderID);
+        if (leaderCard != null)
+            PlayerLeader = leaderCard;
+
         PlayerDeck.Clear();
 
         foreach (var id in saved.cardIDs)

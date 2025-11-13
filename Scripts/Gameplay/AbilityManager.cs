@@ -474,7 +474,6 @@ public class AbilityManager
     /// </summary>
     private IEnumerator HandleMardroeme(CardData card, bool isPlayer)
     {
-        yield return new WaitForSeconds(abilityTriggerDelay);
         yield return boardManager.StartCoroutine(HandleMorph(card, isPlayer));
     }
 
@@ -500,6 +499,8 @@ public class AbilityManager
         {
             yield break;
         }
+
+        yield return new WaitForSeconds(abilityTriggerDelay);
 
         foreach (var morphCard in row.ToList())
         {
