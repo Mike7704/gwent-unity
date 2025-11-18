@@ -274,9 +274,7 @@ public class DeckMenu : Singleton<DeckMenu>
             foreach (var card in visibleCardsDict)
             {
                 if (!deck.Contains(card.Key))
-                {
                     cardsToRemove.Add(card.Key);
-                }
             }
             foreach (var key in cardsToRemove)
             {
@@ -284,26 +282,15 @@ public class DeckMenu : Singleton<DeckMenu>
                 visibleCardsDict.Remove(key);
             }
 
-            // Add new cards
-            foreach (var cardData in deck)
-            {
-                if (!visibleCardsDict.ContainsKey(cardData))
-                {
-                    CardUI cardUI = CardManager.Instance.CreateCard(cardData, cropped: false, DeckCardsContentPanel);
-                    visibleCardsDict[cardData] = cardUI;
-                }
-            }
-
-            // Update overlays for cards
-            foreach (var card in visibleCardsDict)
-                card.Value.ShowCardSelectedOverlay(false);
-
-            // Reorder cards to match sorted deck order
+            // Update order and overlays
             for (int i = 0; i < deck.Count; i++)
             {
                 var cardData = deck[i];
                 if (visibleCardsDict.TryGetValue(cardData, out var cardUI))
+                {
+                    cardUI.ShowCardSelectedOverlay(false);
                     cardUI.transform.SetSiblingIndex(i);
+                }
             }
 
             ForceLayout();
