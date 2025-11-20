@@ -95,6 +95,14 @@ public class DeckManager : Singleton<DeckManager>
     {
         if (PlayerDeck.Remove(card))
         {
+            // If deck contains no faction cards, reset deck faction and leader
+            bool hasFactionCardsLeft = PlayerDeck.Exists(c => c.faction == PlayerFaction);
+            if (!hasFactionCardsLeft)
+            {
+                PlayerFaction = string.Empty;
+                PlayerLeader = null;
+            }
+
             CardSorter.Sort(PlayerDeck);
             OnDeckChanged?.Invoke();
         }
@@ -113,7 +121,8 @@ public class DeckManager : Singleton<DeckManager>
             return;
         }
 
-        PlayerFaction = String.Empty;
+        PlayerFaction = string.Empty;
+        PlayerLeader = null;
         deck.Clear();
         if (deck == PlayerDeck)
             OnDeckChanged?.Invoke();
@@ -181,16 +190,17 @@ public class DeckManager : Singleton<DeckManager>
     /// </summary>
     public void SaveDeck()
     {
-        if (string.IsNullOrEmpty(PlayerFaction))
+        // Delete saved deck if faction, leader, or deck is empty
+        if (string.IsNullOrEmpty(PlayerFaction) || PlayerLeader == null || PlayerDeck.Count == 0)
         {
-            Debug.LogWarning("[DeckManager] Cannot save deck — faction not set.");
+            DeleteSavedDeck();
             return;
         }
 
         SavedDeck save = new()
         {
             faction = PlayerFaction,
-            leaderID = PlayerLeader != null ? PlayerLeader.id : -1
+            leaderID = PlayerLeader.id
         };
 
         foreach (var card in PlayerDeck)

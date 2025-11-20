@@ -34,6 +34,7 @@ public class DeckMenu : Singleton<DeckMenu>
     private List<CardData> currentLeaders = new();
     private int currentLeaderIndex = 0;
     private CardUI currentLeaderUI;
+    private bool syncSavedLeader = true;
 
     // Visible deck cards in the scroll pane
     private readonly Dictionary<CardData, CardUI> visibleCardsDict = new();
@@ -55,11 +56,21 @@ public class DeckMenu : Singleton<DeckMenu>
         ClearDeckButton.onClick.AddListener(() => DeckManager.Instance.ClearDeck(DeckManager.Instance.PlayerDeck, "Player Deck"));
         RandomiseDeckButton.onClick.AddListener(() => DeckManager.Instance.RandomiseDeck(DeckManager.Instance.PlayerDeck, 25));
         BackButton.onClick.AddListener(BackToMainMenu);
+        
+        syncSavedLeader = true;
+        DisplayPlayerDeck(); // Default view
+    }
 
+    void OnEnable()
+    {
         // Subscribe to deck changes
         DeckManager.Instance.OnDeckChanged += RefreshDeckView;
+    }
 
-        DisplayPlayerDeck(); // Default view
+    void OnDisable()
+    {
+        // Unsubscribe from deck changes
+        DeckManager.Instance.OnDeckChanged -= RefreshDeckView;
     }
 
     // -------------------------
@@ -72,7 +83,6 @@ public class DeckMenu : Singleton<DeckMenu>
     private void DisplayFaction(string faction)
     {
         viewingDeck = faction;
-        UpdateUIVisiblity();
         ClearScrollPane();
 
         // Make pool defensive for this scene so cards aren't lost
@@ -88,6 +98,7 @@ public class DeckMenu : Singleton<DeckMenu>
         foreach (var data in cards)
         {
             CardUI cardUI = CardManager.Instance.CreateCard(data, cropped: false, DeckCardsContentPanel);
+            cardUI.OnCardClicked -= HandleCardInteraction; // Just in case
             cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(DeckManager.Instance.PlayerDeck.Contains(data));
             visibleCardsDict[data] = cardUI;
@@ -95,6 +106,7 @@ public class DeckMenu : Singleton<DeckMenu>
 
         // Force immediate layout so items appear correctly
         ForceLayout();
+        RefreshDeckView();
 
         Debug.Log($"[DeckMenu] Displaying {cards.Count} cards for faction: {faction}");
     }
@@ -105,7 +117,6 @@ public class DeckMenu : Singleton<DeckMenu>
     private void DisplayPlayerDeck()
     {
         viewingDeck = "Player";
-        UpdateUIVisiblity();
         ClearScrollPane();
 
         // Make pool defensive for this scene so cards aren't lost
@@ -119,6 +130,7 @@ public class DeckMenu : Singleton<DeckMenu>
         foreach (var data in playerDeck)
         {
             CardUI cardUI = CardManager.Instance.CreateCard(data, cropped: false, DeckCardsContentPanel);
+            cardUI.OnCardClicked -= HandleCardInteraction; // Just in case
             cardUI.OnCardClicked += HandleCardInteraction;
             cardUI.ShowCardSelectedOverlay(false);
             visibleCardsDict[data] = cardUI;
@@ -126,6 +138,7 @@ public class DeckMenu : Singleton<DeckMenu>
 
         // Force immediate layout so items appear correctly
         ForceLayout();
+        RefreshDeckView();
 
         AudioSystem.Instance.PlaySFX(SFX.OpenDeck);
 
@@ -148,7 +161,8 @@ public class DeckMenu : Singleton<DeckMenu>
         string faction = DeckManager.Instance.PlayerFaction;
         if (string.IsNullOrEmpty(faction))
         {
-            Debug.Log("[DeckMenu] No faction selected — cannot display leaders.");
+            // Hide the leader card
+            LeaderContainerPanel.gameObject.SetActive(false);
             return;
         }
 
@@ -158,6 +172,13 @@ public class DeckMenu : Singleton<DeckMenu>
         {
             Debug.LogWarning($"[DeckMenu] No leaders found for faction: {faction}");
             return;
+        }
+
+        // Set leader index to saved player leader
+        if (DeckManager.Instance.PlayerLeader != null && syncSavedLeader)
+        {
+            currentLeaderIndex = currentLeaders.IndexOf(DeckManager.Instance.PlayerLeader);
+            syncSavedLeader = false;
         }
 
         // Make sure index stays valid
@@ -217,6 +238,7 @@ public class DeckMenu : Singleton<DeckMenu>
             data.faction != CardDefs.Faction.Special)
         {
             deck.SetPlayerFaction(data.faction);
+            currentLeaderIndex = 0;
             Debug.Log($"[DeckMenu] Faction auto selected: {data.faction}");
         }
 
@@ -231,13 +253,11 @@ public class DeckMenu : Singleton<DeckMenu>
         if (deck.PlayerDeck.Contains(data))
         {
             deck.RemoveCard(data);
-            cardUI.ShowCardSelectedOverlay(false);
             Debug.Log($"[DeckMenu] Removed [{data.name}] from deck");
         }
         else
         {
             deck.AddCard(data);
-            cardUI.ShowCardSelectedOverlay(true);
             Debug.Log($"[DeckMenu] Added [{data.name}] to deck");
         }
     }
@@ -251,10 +271,15 @@ public class DeckMenu : Singleton<DeckMenu>
     /// </summary>
     private void UpdateUIVisiblity()
     {
+        if (DeckCardsContentPanel == null ||
+            LeaderContainerPanel == null ||
+            DeckButtonsContainerPanel == null)
+            return;
+
         bool isPlayerView = (viewingDeck == "Player");
 
         // Show/hide the leader card
-        LeaderContainerPanel.gameObject.SetActive(isPlayerView);
+        LeaderContainerPanel.gameObject.SetActive(isPlayerView && !string.IsNullOrEmpty(DeckManager.Instance.PlayerFaction));
 
         // Show/hide deck options
         DeckButtonsContainerPanel.gameObject.SetActive(isPlayerView);
@@ -265,8 +290,17 @@ public class DeckMenu : Singleton<DeckMenu>
     /// </summary>
     private void RefreshDeckView()
     {
+        UpdateUIVisiblity();
+
         if (viewingDeck == "Player")
         {
+            // Remove leader card if no faction selected
+            if (string.IsNullOrEmpty(DeckManager.Instance.PlayerFaction) && currentLeaderUI != null)
+            {
+                CardManager.Instance.ReturnCard(currentLeaderUI);
+                currentLeaderUI = null;
+            }
+
             var deck = DeckManager.Instance.PlayerDeck;
             var cardsToRemove = new List<CardData>();
 
