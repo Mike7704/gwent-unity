@@ -46,10 +46,11 @@ public class DeckManager : Singleton<DeckManager>
     }
 
     /// <summary>
-    /// Set the player leader card.
+    /// Set the player/NPC leader card.
     /// </summary>
     /// <param name="leader"></param>
-    public void SetPlayerLeader(CardData leader)
+    /// <param name="isPlayer"></param>
+    public void SetLeader(CardData leader, bool isPlayer)
     {
         if (leader == null)
         {
@@ -57,8 +58,15 @@ public class DeckManager : Singleton<DeckManager>
             return;
         }
 
-        PlayerLeader = leader;
-        OnDeckChanged?.Invoke();
+        if (isPlayer)
+        {
+            PlayerLeader = leader;
+            OnDeckChanged?.Invoke();
+        }
+        else
+        {
+            NPCLeader = leader;
+        }
         Debug.Log($"[DeckManager] Leader set to [{leader.name}]");
     }
 
@@ -150,6 +158,19 @@ public class DeckManager : Singleton<DeckManager>
             PlayerFaction = randomFaction;
         else if (targetDeck == NPCDeck)
             NPCFaction = randomFaction;
+
+        // Pick random leader
+        var leaders = CardDatabase.Instance.GetLeadersByFaction(randomFaction);
+        if (leaders != null && leaders.Count > 0)
+        {
+            var randomLeader = leaders[RandomUtils.GetRandom(0, leaders.Count - 1)];
+
+            SetLeader(randomLeader, isPlayer: targetDeck == PlayerDeck);
+        }
+        else
+        {
+            Debug.LogWarning($"[DeckManager] No leaders found for faction {randomFaction}");
+        }
 
         // Get all cards valid for that faction
         var factionCards = CardDatabase.Instance.GetCardsByFaction(randomFaction);

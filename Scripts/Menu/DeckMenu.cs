@@ -54,7 +54,12 @@ public class DeckMenu : Singleton<DeckMenu>
         PrevLeaderButton.onClick.AddListener(ShowPreviousLeader);
         NextLeaderButton.onClick.AddListener(ShowNextLeader);
         ClearDeckButton.onClick.AddListener(() => DeckManager.Instance.ClearDeck(DeckManager.Instance.PlayerDeck, "Player Deck"));
-        RandomiseDeckButton.onClick.AddListener(() => DeckManager.Instance.RandomiseDeck(DeckManager.Instance.PlayerDeck, 25));
+        RandomiseDeckButton.onClick.AddListener(() =>
+        {
+            DeckManager.Instance.RandomiseDeck(DeckManager.Instance.PlayerDeck, 25);
+            syncSavedLeader = true; // Update leader view
+            DisplayPlayerDeck(); // Refresh view
+        });
         BackButton.onClick.AddListener(BackToMainMenu);
         
         syncSavedLeader = true;
@@ -94,6 +99,8 @@ public class DeckMenu : Singleton<DeckMenu>
             Debug.LogWarning($"No cards found for faction: {faction}");
             return;
         }
+
+        CardSorter.Sort(cards);
 
         foreach (var data in cards)
         {
@@ -190,7 +197,7 @@ public class DeckMenu : Singleton<DeckMenu>
         currentLeaderUI = CardManager.Instance.CreateCard(leaderData, cropped: false, LeaderCardContainer);
 
         // Update leader in DeckManager
-        DeckManager.Instance.SetPlayerLeader(leaderData);
+        DeckManager.Instance.SetLeader(leaderData, isPlayer: true);
     }
 
     /// <summary>
