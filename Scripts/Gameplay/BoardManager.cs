@@ -440,6 +440,10 @@ public class BoardManager : Singleton<BoardManager>
         CreateSummonDeck(CardDatabase.Instance.summonCards, PlayerSummonDeckContainer, isPlayer: true);
         CreateSummonDeck(CardDatabase.Instance.summonCards, OpponentSummonDeckContainer, isPlayer: false);
 
+        // Create leader cards
+        CreateLeader(DeckManager.Instance.PlayerLeader, PlayerLeaderContainer, isPlayer: true);
+        CreateLeader(DeckManager.Instance.NPCLeader, OpponentLeaderContainer, isPlayer: false);
+
         // Create both decks from DeckManager
         CreateDeck(DeckManager.Instance.PlayerDeck, PlayerDeckContainer, isPlayer: true);
         CreateDeck(DeckManager.Instance.NPCDeck, OpponentDeckContainer, isPlayer: false);
@@ -481,13 +485,37 @@ public class BoardManager : Singleton<BoardManager>
             else if (!isPlayer)
                 newCard.id += 1000; // Offset opponent card IDs to avoid clashes
             copiedDeck.Add(newCard);
-            CreateAndRegisterCard(newCard, summonContainer);
+            CreateAndRegisterCard(newCard, summonContainer, visible: false);
         }
 
         if (isPlayer)
             state.playerSummonDeck = copiedDeck;
         else
             state.opponentSummonDeck = copiedDeck;
+    }
+
+    /// <summary>
+    /// Generates a leader card from DeckManager and creates cardUI with mapping.
+    /// </summary>
+    /// <param name="sourceLeaderCard"></param>
+    /// <param name="leaderContainer"></param>
+    /// <param name="isPlayer"></param>
+    private void CreateLeader(CardData sourceLeaderCard, Transform leaderContainer, bool isPlayer)
+    {
+        // Make a copy so the original DeckManager leader card isn't modified during gameplay
+        List<CardData> copiedLeader = new List<CardData>();
+
+        // Deep clone so each card is unique
+        CardData newLeaderCard = sourceLeaderCard.Clone();
+        if (!isPlayer)
+            newLeaderCard.id += 1000; // Offset opponent card IDs to avoid clashes
+        copiedLeader.Add(newLeaderCard);
+        CreateAndRegisterCard(newLeaderCard, leaderContainer, visible: true);
+
+        if (isPlayer)
+            state.playerLeader = copiedLeader;
+        else
+            state.opponentLeader = copiedLeader;
     }
 
     /// <summary>
@@ -508,7 +536,7 @@ public class BoardManager : Singleton<BoardManager>
             if (!isPlayer)
                 newCard.id += 1000; // Offset opponent card IDs to avoid clashes
             copiedDeck.Add(newCard);
-            CreateAndRegisterCard(newCard, deckContainer);
+            CreateAndRegisterCard(newCard, deckContainer, visible: false);
         }
 
         if (isPlayer)
@@ -520,10 +548,10 @@ public class BoardManager : Singleton<BoardManager>
     /// <summary>
     /// Create UI for a given card and store the mapping
     /// </summary>
-    public void CreateAndRegisterCard(CardData card, Transform deckContainer)
+    public void CreateAndRegisterCard(CardData card, Transform deckContainer, bool visible)
     {
         CardUI cardUI = CardManager.Instance.CreateCard(card, cropped: true, deckContainer);
-        cardUI.gameObject.SetActive(false); // Hide the card until it's drawn
+        cardUI.gameObject.SetActive(visible); // Hide the card until it's drawn
         cardUIMap[card] = cardUI;
         SetupCardInteraction(cardUI);
     }
@@ -569,7 +597,7 @@ public class BoardManager : Singleton<BoardManager>
             return;
         }
         // Handle horn and mardroeme special cards separately
-        if (isPlayer && cardData.type == CardDefs.Type.Special &&
+        if (isPlayer && (cardData.type == CardDefs.Type.Special || cardData.type == CardDefs.Type.Leader) &&
             (cardData.ability == CardDefs.Ability.Horn || cardData.ability == CardDefs.Ability.Mardroeme))
         {
             abilityManager.HandleSpecialCard(cardData, isPlayer);
@@ -640,7 +668,7 @@ public class BoardManager : Singleton<BoardManager>
             // Medic is active, handle card to recover
             abilityManager.HandleMedicRecover(card, isPlayer: true);
         }
-        else if (state.playerHand.Contains(card))
+        else if (state.playerHand.Contains(card) || state.playerLeader.Contains(card))
         {
             // Card is in player's hand
             HandleCardPlayed(cardUI.cardData, isPlayer: true);

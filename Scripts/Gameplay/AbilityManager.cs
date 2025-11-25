@@ -1017,7 +1017,7 @@ public class AbilityManager
             // Copy the special card so we keep original in summon deck for other uses
             CardData newSpecialCard = specialCardFromSummonDeck.Clone();
             newSpecialCard.range = row.First(c => c.ability == ability).range; // Match the range of the unit card
-            boardManager.CreateAndRegisterCard(newSpecialCard, summonContainer);
+            boardManager.CreateAndRegisterCard(newSpecialCard, summonContainer, visible: false);
             summonDeck.Add(newSpecialCard);
 
             // Add the special card to the special container

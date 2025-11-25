@@ -25,6 +25,10 @@ public class BoardState
     public List<CardData> playerSummonDeck = new();
     public List<CardData> opponentSummonDeck = new();
 
+    // Player and Opponent leaders
+    public List<CardData> playerLeader = new();
+    public List<CardData> opponentLeader = new();
+
     // Player and Opponent decks
     public List<CardData> playerDeck = new();
     public List<CardData> opponentDeck = new();

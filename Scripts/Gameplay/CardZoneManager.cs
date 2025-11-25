@@ -144,7 +144,7 @@ public class CardZoneManager
             AddWeatherCard(card, isPlayer);
             return;
         }
-        if (card.type == CardDefs.Type.Special)
+        if (card.type == CardDefs.Type.Special || card.type == CardDefs.Type.Leader)
         {
             Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} played [{card.name}]");
             AddCardToGraveyard(card, isPlayer);
@@ -403,6 +403,7 @@ public class CardZoneManager
         if (row == state.playerMeleeSpecial) return boardManager.PlayerMeleeSpecialContainer;
         if (row == state.playerRangedSpecial) return boardManager.PlayerRangedSpecialContainer;
         if (row == state.playerSiegeSpecial) return boardManager.PlayerSiegeSpecialContainer;
+        if (row == state.playerLeader) return boardManager.PlayerLeaderContainer;
         if (row == state.playerDeck) return boardManager.PlayerDeckContainer;
         if (row == state.playerSummonDeck) return boardManager.PlayerSummonDeckContainer;
         if (row == state.playerGraveyard) return boardManager.PlayerGraveyardContainer;
@@ -414,6 +415,7 @@ public class CardZoneManager
         if (row == state.opponentMeleeSpecial) return boardManager.OpponentMeleeSpecialContainer;
         if (row == state.opponentRangedSpecial) return boardManager.OpponentRangedSpecialContainer;
         if (row == state.opponentSiegeSpecial) return boardManager.OpponentSiegeSpecialContainer;
+        if (row == state.opponentLeader) return boardManager.OpponentLeaderContainer;
         if (row == state.opponentDeck) return boardManager.OpponentDeckContainer;
         if (row == state.opponentSummonDeck) return boardManager.OpponentSummonDeckContainer;
         if (row == state.opponentGraveyard) return boardManager.OpponentGraveyardContainer;
@@ -432,6 +434,7 @@ public class CardZoneManager
         if (isPlayer)
         {
             if (state.playerHand.Contains(card)) return state.playerHand;
+            if (state.playerLeader.Contains(card)) return state.playerLeader;
             if (state.playerDeck.Contains(card)) return state.playerDeck;
             if (state.playerGraveyard.Contains(card)) return state.playerGraveyard;
             if (state.playerMelee.Contains(card)) return state.playerMelee;
@@ -445,6 +448,7 @@ public class CardZoneManager
         else
         {
             if (state.opponentHand.Contains(card)) return state.opponentHand;
+            if (state.opponentLeader.Contains(card)) return state.opponentLeader;
             if (state.opponentDeck.Contains(card)) return state.opponentDeck;
             if (state.opponentGraveyard.Contains(card)) return state.opponentGraveyard;
             if (state.opponentMelee.Contains(card)) return state.opponentMelee;
@@ -473,7 +477,7 @@ public class CardZoneManager
         {
             AudioSystem.Instance.PlaySFX(SFX.RedrawCard);
         }
-        else if (card.type == CardDefs.Type.Special)
+        else if (card.type == CardDefs.Type.Special || card.type == CardDefs.Type.Leader)
         {
             return;
         }
