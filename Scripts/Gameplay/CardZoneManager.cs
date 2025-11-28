@@ -139,6 +139,8 @@ public class CardZoneManager
     /// </summary>
     public void AddCardToBoard(CardData card, bool isPlayer)
     {
+        UpdateRecentCardPlayed(card, isPlayer);
+
         if (card.IsWeatherCard())
         {
             AddWeatherCard(card, isPlayer);
@@ -319,7 +321,7 @@ public class CardZoneManager
 
         // Destroy the card
         if (cardUIMap.TryGetValue(card, out var cardUI))
-         {
+        {
             if (cardUI != null)
             {
                 cardUI.transform.SetParent(null);
@@ -337,6 +339,39 @@ public class CardZoneManager
             Debug.Log($"[CardZoneManager] Discarded [{card.name}]");
         else
             Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} discarded [{card.name}]");
+    }
+
+    /// <summary>
+    /// Displays the most recently played card for player or opponent.
+    /// </summary>
+    /// <param name="cardPlayed"></param>
+    /// <param name="isPlayer"></param>
+    private void UpdateRecentCardPlayed(CardData cardPlayed, bool isPlayer)
+    {
+        // Decide where to place the card and which UI reference to update
+        Transform recentCardContainer = isPlayer ? boardManager.PlayerRecentCardContainer : boardManager.OpponentRecentCardContainer;
+        CardData recentCard = isPlayer ? state.playerRecentCardPlayed : state.opponentRecentCardPlayed;
+
+        // Destroy the old card
+        if (cardUIMap.TryGetValue(recentCard, out var cardUI))
+        {
+            if (cardUI != null)
+            {
+                cardUI.transform.SetParent(null);
+                cardUI.gameObject.SetActive(false);
+                UnityEngine.Object.Destroy(cardUI.gameObject);
+            }
+            cardUIMap.Remove(recentCard);
+        }
+
+        // Create a clone of the card data to be displayed
+        CardData newCard = cardPlayed.Clone();
+        if (isPlayer)
+            state.playerRecentCardPlayed = newCard;
+        else
+            state.opponentRecentCardPlayed = newCard;
+
+        boardManager.CreateAndRegisterCard(newCard, recentCardContainer, visible: true);
     }
 
     /// <summary>
