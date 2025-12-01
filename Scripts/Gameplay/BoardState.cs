@@ -18,6 +18,8 @@ public class BoardState
     public bool IsGameOver { get; set; }
     public int PlayerLife { get; set; }
     public int OpponentLife { get; set; }
+    public int PlayerCardsRedrawn { get; set; }
+    public int OpponentCardsRedrawn { get; set; }
     public List<int> PlayerRoundScores { get; private set; } = new();
     public List<int> OpponentRoundScores { get; private set; } = new();
 

@@ -48,6 +48,9 @@ public class CardZoneManager
     /// </summary>
     private void UpdateZoneUI(List<CardData> zoneList)
     {
+        bool hideZone = zoneList == state.playerDeck || zoneList == state.opponentDeck ||
+            zoneList == state.playerSummonDeck || zoneList == state.opponentSummonDeck;
+
         Transform row = GetRowContainer(zoneList);
 
         if (zoneList == null || row == null)
@@ -58,7 +61,7 @@ public class CardZoneManager
             var cardData = zoneList[i];
             if (cardUIMap.TryGetValue(cardData, out var cardUI))
             {
-                cardUI.gameObject.SetActive(true);
+                cardUI.gameObject.SetActive(!hideZone);
                 cardUI.transform.SetParent(row, false);
                 cardUI.transform.SetAsLastSibling();
             }
@@ -266,6 +269,24 @@ public class CardZoneManager
         MoveCard(card, fromZone, hand);
 
         Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{card.name}] to hand");
+    }
+
+    /// <summary>
+    /// Adds a card to a player's deck.
+    /// </summary>
+    public void AddCardToDeck(CardData card, bool isPlayer)
+    {
+        // Determine which zone the card is coming from
+        List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);
+        List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
+
+        // Reset any temporary modifications to the card
+        card.strength = card.defaultStrength;
+        card.range = card.defaultRange;
+
+        MoveCard(card, fromZone, deck);
+
+        Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} added [{card.name}] to deck");
     }
 
     /// <summary>

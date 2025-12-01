@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using TMPro;
 
 /// <summary>
 /// Controls gameplay setup and flow.
@@ -189,11 +190,15 @@ public class BoardManager : Singleton<BoardManager>
 
         AudioSystem.Instance.PlaySFX(SFX.RedrawCardsStart);
 
-        boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw: {"cardsRedrawn"}/2 [SKIP]");
-        yield return new WaitForSeconds(1f);
+        boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw ({state.PlayerCardsRedrawn}/2) [PASS TO SKIP]");
+        PassButton.GetComponentInChildren<TextMeshProUGUI>().text = "Skip";
 
+        yield return new WaitUntil(() => state.PlayerCardsRedrawn >= 2);
+
+        // Start the game
+        boardUI.ShowBanner(Banner.PlayerTurn, $"Starting the game...");
+        PassButton.GetComponentInChildren<TextMeshProUGUI>().text = "Pass";
         AudioSystem.Instance.PlaySFX(SFX.RedrawCardsEnd);
-
         SetGamePhase(GamePhase.RoundStart);
     }
 
@@ -435,6 +440,8 @@ public class BoardManager : Singleton<BoardManager>
         state.IsGameOver = false;
         state.PlayerLife = 2;
         state.OpponentLife = 2;
+        state.PlayerCardsRedrawn = 0;
+        state.OpponentCardsRedrawn = 0;
 
         // Create a summon deck for both players
         CreateSummonDeck(CardDatabase.Instance.summonCards, PlayerSummonDeckContainer, isPlayer: true);
@@ -578,6 +585,31 @@ public class BoardManager : Singleton<BoardManager>
     // -------------------------
 
     /// <summary>
+    /// Handles a card being selected for redraw at the start of the game.
+    /// </summary>
+    /// <param name="cardToRedraw"></param>
+    /// <param name="isPlayer"></param>
+    private void HandleRedrawSelection(CardData cardToRedraw, bool isPlayer)
+    {
+        List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
+
+        if (state.PlayerCardsRedrawn >= 2)
+            return;
+
+        // Draw a new random card
+        int randomIndex = RandomUtils.GetRandom(0, deck.Count - 1);
+        CardData drawnCard = deck[randomIndex];
+        zoneManager.AddCardToHand(drawnCard, isPlayer);
+
+        // Remove from hand back to deck
+        zoneManager.AddCardToDeck(cardToRedraw, isPlayer);
+
+        state.PlayerCardsRedrawn++;
+
+        boardUI.ShowBanner(Banner.PlayerTurn, $"Choose a card to redraw ({state.PlayerCardsRedrawn}/2) [PASS TO SKIP]");
+    }
+
+    /// <summary>
     /// Handles a card being played to the board.
     /// </summary>
     public void HandleCardPlayed(CardData cardData, bool isPlayer)
@@ -648,7 +680,12 @@ public class BoardManager : Singleton<BoardManager>
 
         CardData card = cardUI.cardData;
 
-        if (abilityManager.isDecoyActive)
+        if (state.CurrentPhase == GamePhase.RedrawHand)
+        {
+            // Redraw phase, handle redraw selection
+            HandleRedrawSelection(card, isPlayer: true);
+        }
+        else if (abilityManager.isDecoyActive)
         {
             // Decoy is active, handle decoy logic
             abilityManager.HandleDecoySwap(card, isPlayer: true);
@@ -803,6 +840,14 @@ public class BoardManager : Singleton<BoardManager>
     /// <param name="isPlayer"></param>
     public void PassRound(bool isPlayer)
     {
+        // Also used for skipping redraw at start of game
+        if (isPlayer && state.CurrentPhase == GamePhase.RedrawHand)
+        {
+            state.PlayerCardsRedrawn = 2;
+            return;
+        }
+
+        // Pass the round
         if (isPlayer && !state.PlayerHasPassed && state.CurrentPhase == GamePhase.PlayerTurn &&
             !abilityManager.isDecoyActive && !abilityManager.isMedicActive && !abilityManager.isAgileActive)
         {
