@@ -349,7 +349,7 @@ public class BoardManager : Singleton<BoardManager>
             state.PlayerLife--;
             boardUI.ShowBanner(Banner.RoundLoss, "You lost the round");
         }
-        else
+        else if (!abilityManager.HandleNilfgaardAbility())
         {
             Debug.Log("[BoardManager] It's a draw!");
             AudioSystem.Instance.PlaySFX(SFX.RoundDraw);

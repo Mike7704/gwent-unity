@@ -775,13 +775,39 @@ public class AbilityManager
     /// <summary>
     /// Nilfgaard: Win the round that ends in a draw
     /// </summary>
-    /// <param name="isPlayer"></param>
-    public IEnumerator HandleNilfgaardAbility(bool isPlayer)
+    /// <returns></returns>
+    public bool HandleNilfgaardAbility()
     {
         if (!boardManager.factionAbilityEnabled)
-            yield break;
+            return false;
 
-        yield break;
+        // Opponent
+        if (boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard)
+        {
+            Debug.Log($"[AbilityManager] Opponent used Nilfgaard ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Nilfgaard, "Nilfgaard Ability Triggered - You lost the round");
+            //state.OpponentUsedFactionAbility = true;
+
+            // Remove a life from player
+            state.PlayerLife--;
+            return true;
+        }
+
+        // Player
+        if (boardManager.playerFaction == CardDefs.Faction.Nilfgaard && boardManager.opponentFaction != CardDefs.Faction.Nilfgaard)
+        {
+            Debug.Log($"[AbilityManager] Player used Nilfgaard ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Nilfgaard, "Nilfgaard Ability Triggered - You won the round");
+            //state.PlayerUsedFactionAbility = true;
+
+            // Remove a life from opponent
+            state.OpponentLife--;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
