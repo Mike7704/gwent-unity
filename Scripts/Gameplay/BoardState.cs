@@ -20,6 +20,9 @@ public class BoardState
     public int OpponentLife { get; set; }
     public int PlayerCardsRedrawn { get; set; }
     public int OpponentCardsRedrawn { get; set; }
+    public bool PlayerUsedFactionAbility { get; set; }
+    public bool OpponentUsedFactionAbility { get; set; }
+    public int CurrentRound { get; set; }
     public List<int> PlayerRoundScores { get; private set; } = new();
     public List<int> OpponentRoundScores { get; private set; } = new();
 

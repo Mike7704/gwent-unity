@@ -66,9 +66,9 @@ public class BoardManager : Singleton<BoardManager>
     public bool lastPlayedByPlayer;
 
     // Time/Delay values
-    private readonly float turnDelay = 1.5f;
-    private readonly float roundDelay = 2.5f;
-    private readonly float aiThinkingTime = 1f;
+    public readonly float turnDelay = 1.5f;
+    public readonly float roundDelay = 2.5f;
+    public readonly float aiThinkingTime = 1f;
 
     void Start()
     {
@@ -305,6 +305,10 @@ public class BoardManager : Singleton<BoardManager>
         }
         else
         {
+            // Do faction abilities at start of round
+            yield return StartCoroutine(abilityManager.HandleNorthernRealmsAbility());
+            UpdateBoardUI();
+
             boardUI.ShowBanner(Banner.PlayerTurn, "Starting the next round...");
             yield return new WaitForSeconds(roundDelay);
 
@@ -329,6 +333,7 @@ public class BoardManager : Singleton<BoardManager>
         int playerScore = state.GetPlayerTotalScore();
         int opponentScore = state.GetOpponentTotalScore();
         state.RecordRoundScores();
+        state.CurrentRound++;
 
         if (playerScore > opponentScore)
         {
@@ -442,6 +447,9 @@ public class BoardManager : Singleton<BoardManager>
         state.OpponentLife = 2;
         state.PlayerCardsRedrawn = 0;
         state.OpponentCardsRedrawn = 0;
+        state.PlayerUsedFactionAbility = false;
+        state.OpponentUsedFactionAbility = false;
+        state.CurrentRound = 1;
 
         // Create a summon deck for both players
         CreateSummonDeck(CardDatabase.Instance.summonCards, PlayerSummonDeckContainer, isPlayer: true);

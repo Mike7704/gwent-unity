@@ -726,6 +726,101 @@ public class AbilityManager
     }
 
     // -------------------------
+    // Faction Ability
+    // -------------------------
+
+    /// <summary>
+    /// Northern Realms: Draw an additional card after winning a round
+    /// </summary>
+    public IEnumerator HandleNorthernRealmsAbility()
+    {
+        if (!boardManager.factionAbilityEnabled)
+            yield break;
+
+        // Opponent
+        if (boardManager.opponentFaction == CardDefs.Faction.NorthernRealms && !state.OpponentUsedFactionAbility &&
+           state.opponentDeck.Count > 0 && state.PlayerLife == 1 && !(state.OpponentLife == 1 && state.CurrentRound == 2))
+        {
+            Debug.Log($"[AbilityManager] Opponent used Northern Realms ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.NorthernRealms, "Northern Realms Ability Triggered - Your opponent draws an additional card");
+            state.OpponentUsedFactionAbility = true;
+
+            // Draw a random card from opponent deck
+            int randomIndex = RandomUtils.GetRandom(0, state.opponentDeck.Count - 1);
+            CardData cardToDraw = state.opponentDeck[randomIndex];
+            zoneManager.AddCardToHand(cardToDraw, isPlayer: false);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
+
+        // Player
+        if (boardManager.playerFaction == CardDefs.Faction.NorthernRealms && !state.PlayerUsedFactionAbility &&
+           state.playerDeck.Count > 0 && state.OpponentLife == 1 && !(state.PlayerLife == 1 && state.CurrentRound == 2))
+        {
+            Debug.Log($"[AbilityManager] Player used Northern Realms ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.NorthernRealms, "Northern Realms Ability Triggered - You draw an additional card");
+            state.PlayerUsedFactionAbility = true;
+
+            // Draw a random card from player deck
+            int randomIndex = RandomUtils.GetRandom(0, state.playerDeck.Count - 1);
+            CardData cardToDraw = state.playerDeck[randomIndex];
+            zoneManager.AddCardToHand(cardToDraw, isPlayer: true);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
+    }
+
+    /// <summary>
+    /// Nilfgaard: Win the round that ends in a draw
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public IEnumerator HandleNilfgaardAbility(bool isPlayer)
+    {
+        if (!boardManager.factionAbilityEnabled)
+            yield break;
+
+        yield break;
+    }
+
+    /// <summary>
+    /// Scoiatael: Draw a random card from your opponent's graveyard at the start of the third round
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public IEnumerator HandleScoiataelAbility(bool isPlayer)
+    {
+        if (!boardManager.factionAbilityEnabled)
+            yield break;
+
+        yield break;
+    }
+
+    /// <summary>
+    /// Monsters: Keeps a random Unit Card on the board after each round
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public IEnumerator HandleMonstersAbility(bool isPlayer)
+    {
+        if (!boardManager.factionAbilityEnabled)
+            yield break;
+
+        yield break;
+    }
+
+    /// <summary>
+    /// Skellige: Play a random cards from discard pile in the third round
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public IEnumerator HandleSkelligeAbility(bool isPlayer)
+    {
+        if (!boardManager.factionAbilityEnabled)
+            yield break;
+
+        yield break;
+    }
+
+    // -------------------------
     // Row Strength Calculation
     // -------------------------
 
