@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.PackageManager;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 /// <summary>
@@ -813,13 +815,42 @@ public class AbilityManager
     /// <summary>
     /// Scoiatael: Draw a random card from your opponent's graveyard at the start of the third round
     /// </summary>
-    /// <param name="isPlayer"></param>
-    public IEnumerator HandleScoiataelAbility(bool isPlayer)
+    public IEnumerator HandleScoiataelAbility()
     {
         if (!boardManager.factionAbilityEnabled)
             yield break;
 
-        yield break;
+        // Opponent
+        if (boardManager.opponentFaction == CardDefs.Faction.Scoiatael && state.CurrentRound == 3 && state.playerGraveyard.Count > 0 && !state.OpponentUsedFactionAbility)
+        {
+            Debug.Log($"[AbilityManager] Opponent used Scoiatael ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Scoiatael, "Scoia'tael Ability Triggered - Your opponent recovered a random card from your graveyard");
+            state.OpponentUsedFactionAbility = true;
+
+            // Draw a random card from player graveyard
+            int randomIndex = RandomUtils.GetRandom(0, state.playerGraveyard.Count - 1);
+            CardData cardToDraw = state.playerGraveyard[randomIndex];
+            zoneManager.AddCardToHand(cardToDraw, isPlayer: false);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
+
+        // Player
+        if (boardManager.playerFaction == CardDefs.Faction.Scoiatael && state.CurrentRound == 3 && state.opponentGraveyard.Count > 0 && !state.PlayerUsedFactionAbility)
+        {
+            Debug.Log($"[AbilityManager] Player used Scoiatael ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Scoiatael, "Scoia'tael Ability Triggered - You recovered a random card from your opponent's graveyard");
+            state.PlayerUsedFactionAbility = true;
+
+            // Draw a random card from opponent graveyard
+            int randomIndex = RandomUtils.GetRandom(0, state.opponentGraveyard.Count - 1);
+            CardData cardToDraw = state.opponentGraveyard[randomIndex];
+            zoneManager.AddCardToHand(cardToDraw, isPlayer: true);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
     }
 
     /// <summary>

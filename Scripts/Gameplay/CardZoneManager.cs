@@ -500,6 +500,8 @@ public class CardZoneManager
             if (state.playerRangedSpecial.Contains(card)) return state.playerRangedSpecial;
             if (state.playerSiegeSpecial.Contains(card)) return state.playerSiegeSpecial;
             if (state.playerSummonDeck.Contains(card)) return state.playerSummonDeck;
+            // Scoiatael ability
+            if (state.opponentGraveyard.Contains(card)) return state.opponentGraveyard;
         }
         else
         {
@@ -514,6 +516,8 @@ public class CardZoneManager
             if (state.opponentRangedSpecial.Contains(card)) return state.opponentRangedSpecial;
             if (state.opponentSiegeSpecial.Contains(card)) return state.opponentSiegeSpecial;
             if (state.opponentSummonDeck.Contains(card)) return state.opponentSummonDeck;
+            // Scoiatael ability
+            if (state.playerGraveyard.Contains(card)) return state.playerGraveyard;
         }
 
         if (state.weatherCards.Contains(card)) return state.weatherCards;
