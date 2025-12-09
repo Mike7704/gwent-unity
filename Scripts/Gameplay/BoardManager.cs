@@ -308,6 +308,7 @@ public class BoardManager : Singleton<BoardManager>
             // Do faction abilities at start of round
             yield return StartCoroutine(abilityManager.HandleNorthernRealmsAbility());
             yield return StartCoroutine(abilityManager.HandleScoiataelAbility());
+            yield return StartCoroutine(abilityManager.HandleSkelligeAbility());
             UpdateBoardUI();
 
             boardUI.ShowBanner(Banner.PlayerTurn, "Starting the next round...");

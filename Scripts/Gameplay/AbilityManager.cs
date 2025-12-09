@@ -856,8 +856,7 @@ public class AbilityManager
     /// <summary>
     /// Monsters: Keeps a random Unit Card on the board after each round
     /// </summary>
-    /// <param name="isPlayer"></param>
-    public IEnumerator HandleMonstersAbility(bool isPlayer)
+    public IEnumerator HandleMonstersAbility()
     {
         if (!boardManager.factionAbilityEnabled)
             yield break;
@@ -868,13 +867,42 @@ public class AbilityManager
     /// <summary>
     /// Skellige: Play a random cards from discard pile in the third round
     /// </summary>
-    /// <param name="isPlayer"></param>
-    public IEnumerator HandleSkelligeAbility(bool isPlayer)
+    public IEnumerator HandleSkelligeAbility()
     {
         if (!boardManager.factionAbilityEnabled)
             yield break;
 
-        yield break;
+        // Opponent
+        if (boardManager.opponentFaction == CardDefs.Faction.Skellige && state.CurrentRound == 3 && state.opponentGraveyard.Count > 0 && !state.OpponentUsedFactionAbility)
+        {
+            Debug.Log($"[AbilityManager] Opponent used Skellige ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Skellige, "Skellige Ability Triggered - Your opponent played a random unit from their graveyard");
+            state.OpponentUsedFactionAbility = true;
+
+            // Draw a random card from the graveyard
+            int randomIndex = RandomUtils.GetRandom(0, state.opponentGraveyard.Count - 1);
+            CardData cardToDraw = state.opponentGraveyard[randomIndex];
+            zoneManager.AddCardToBoard(cardToDraw, isPlayer: false);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
+
+        // Player
+        if (boardManager.playerFaction == CardDefs.Faction.Skellige && state.CurrentRound == 3 && state.playerGraveyard.Count > 0 && !state.PlayerUsedFactionAbility)
+        {
+            Debug.Log($"[AbilityManager] Player used Skellige ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Skellige, "Skellige Ability Triggered - You played a random unit from your graveyard");
+            state.PlayerUsedFactionAbility = true;
+
+            // Draw a random card from the graveyard
+            int randomIndex = RandomUtils.GetRandom(0, state.playerGraveyard.Count - 1);
+            CardData cardToDraw = state.playerGraveyard[randomIndex];
+            zoneManager.AddCardToBoard(cardToDraw, isPlayer: true);
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
     }
 
     // -------------------------
