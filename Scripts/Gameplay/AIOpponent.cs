@@ -26,7 +26,7 @@ public class AIOpponent
             yield break;
         }
 
-        if (state.opponentHand.Count == 0 || RandomUtils.GetRandom(0, 5) == 1)
+        if (state.opponentHand.Count == 0 || RandomUtils.GetRandom(0, 3) == 1)
         {
             Debug.Log("[AIOpponent] No cards left. Passing turn...");
             boardManager.PassRound(isPlayer: false);

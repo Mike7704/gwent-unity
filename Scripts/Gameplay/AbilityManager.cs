@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.PackageManager;
-using UnityEditor.VersionControl;
 using UnityEngine;
 
 /// <summary>
@@ -883,8 +881,27 @@ public class AbilityManager
             // Draw a random card from the graveyard
             int randomIndex = RandomUtils.GetRandom(0, state.opponentGraveyard.Count - 1);
             CardData cardToDraw = state.opponentGraveyard[randomIndex];
-            zoneManager.AddCardToBoard(cardToDraw, isPlayer: false);
 
+            if (cardToDraw.range == CardDefs.Range.Agile)
+            {
+                // Let opponent select a row
+                yield return new WaitForSeconds(boardManager.roundDelay);
+                boardManager.boardUI.HideBanner();
+                HandleAgile(cardToDraw, isPlayer: false);
+                yield return new WaitUntil(() => !isMedicActive && !isAgileActive);
+            }
+            else if (cardToDraw.ability == CardDefs.Ability.Medic)
+            {
+                // Let opponent recover a card
+                zoneManager.AddCardToBoard(cardToDraw, isPlayer: false);
+                yield return new WaitForSeconds(boardManager.roundDelay);
+                boardManager.boardUI.HideBanner();
+                yield return boardManager.StartCoroutine(HandleMedic(isPlayer: false));
+            }
+            else
+            {
+                zoneManager.AddCardToBoard(cardToDraw, isPlayer: false);
+            }
             yield return new WaitForSeconds(boardManager.roundDelay);
         }
 
@@ -899,8 +916,27 @@ public class AbilityManager
             // Draw a random card from the graveyard
             int randomIndex = RandomUtils.GetRandom(0, state.playerGraveyard.Count - 1);
             CardData cardToDraw = state.playerGraveyard[randomIndex];
-            zoneManager.AddCardToBoard(cardToDraw, isPlayer: true);
 
+            if (cardToDraw.range == CardDefs.Range.Agile)
+            {
+                // Let player select a row
+                yield return new WaitForSeconds(boardManager.roundDelay);
+                boardManager.boardUI.HideBanner();
+                HandleAgile(cardToDraw, isPlayer: true);
+                yield return new WaitUntil(() => !isMedicActive && !isAgileActive);
+            }
+            else if (cardToDraw.ability == CardDefs.Ability.Medic)
+            {
+                // Let player recover a card
+                zoneManager.AddCardToBoard(cardToDraw, isPlayer: true);
+                yield return new WaitForSeconds(boardManager.roundDelay);
+                boardManager.boardUI.HideBanner();
+                yield return boardManager.StartCoroutine(HandleMedic(isPlayer: true));
+            }
+            else
+            {
+                zoneManager.AddCardToBoard(cardToDraw, isPlayer: true);
+            }
             yield return new WaitForSeconds(boardManager.roundDelay);
         }
     }
