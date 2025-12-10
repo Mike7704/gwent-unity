@@ -34,6 +34,10 @@ public class AbilityManager
     public bool isAgileActive = false;
     private CardData activeAgileCard = null;
 
+    // Monsters faction ability
+    public CardData playerMonsterCard = null;
+    public CardData opponentMonsterCard = null;
+
     private readonly float abilityTriggerDelay = 1f;
     private readonly float cardSummonDelay = 0.3f;
 
@@ -854,12 +858,113 @@ public class AbilityManager
     /// <summary>
     /// Monsters: Keeps a random Unit Card on the board after each round
     /// </summary>
-    public IEnumerator HandleMonstersAbility()
+    public void HandleMonstersAbilityStart()
+    {
+        if (!boardManager.factionAbilityEnabled)
+            return;
+
+        // Get a random opponent unit to keep on the board for next round
+        if (boardManager.opponentFaction == CardDefs.Faction.Monsters && opponentMonsterCard == null)
+        {
+            List<CardData> standardMeleeCards = GetStandardCardsOnRow(state.opponentMelee);
+            List<CardData> standardRangedCards = GetStandardCardsOnRow(state.opponentRanged);
+            List<CardData> standardSiegeCards = GetStandardCardsOnRow(state.opponentSiege);
+
+            if (standardMeleeCards.Count > 0 || standardRangedCards.Count > 0 || standardSiegeCards.Count > 0)
+            {
+                // Select a random row that has a standard card
+                for (int attempts = 0; attempts < 200; attempts++)
+                {
+                    int randomRow = RandomUtils.GetRandom(0, 2);
+                    if (randomRow == 0 && standardMeleeCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardMeleeCards.Count - 1);
+                        opponentMonsterCard = standardMeleeCards[randomCardIndex];
+                        break;
+                    }
+                    else if (randomRow == 1 && standardRangedCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardRangedCards.Count - 1);
+                        opponentMonsterCard = standardRangedCards[randomCardIndex];
+                        break;
+                    }
+                    else if (randomRow == 2 && standardSiegeCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardSiegeCards.Count - 1);
+                        opponentMonsterCard = standardSiegeCards[randomCardIndex];
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Get a random player unit to keep on the board for next round
+        if (boardManager.playerFaction == CardDefs.Faction.Monsters && playerMonsterCard == null)
+        {
+            List<CardData> standardMeleeCards = GetStandardCardsOnRow(state.playerMelee);
+            List<CardData> standardRangedCards = GetStandardCardsOnRow(state.playerRanged);
+            List<CardData> standardSiegeCards = GetStandardCardsOnRow(state.playerSiege);
+
+            if (standardMeleeCards.Count > 0 || standardRangedCards.Count > 0 || standardSiegeCards.Count > 0)
+            {
+                // Select a random row that has a standard card
+                for (int attempts = 0; attempts < 200; attempts++)
+                {
+                    int randomRow = RandomUtils.GetRandom(0, 2);
+                    if (randomRow == 0 && standardMeleeCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardMeleeCards.Count - 1);
+                        playerMonsterCard = standardMeleeCards[randomCardIndex];
+                        break;
+                    }
+                    else if (randomRow == 1 && standardRangedCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardRangedCards.Count - 1);
+                        playerMonsterCard = standardRangedCards[randomCardIndex];
+                        break;
+                    }
+                    else if (randomRow == 2 && standardSiegeCards.Count > 0)
+                    {
+                        int randomCardIndex = RandomUtils.GetRandom(0, standardSiegeCards.Count - 1);
+                        playerMonsterCard = standardSiegeCards[randomCardIndex];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Monsters: Keeps a random Unit Card on the board after each round
+    /// </summary>
+    public IEnumerator HandleMonstersAbilityEnd()
     {
         if (!boardManager.factionAbilityEnabled)
             yield break;
 
-        yield break;
+        // Opponent
+        if (boardManager.opponentFaction == CardDefs.Faction.Monsters && opponentMonsterCard != null)
+        {
+            Debug.Log($"[AbilityManager] Opponent used Monsters ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Monsters, "Monsters Ability Triggered - Your opponent keeps a random unit on the board");
+            //state.OpponentUsedFactionAbility = true;
+            opponentMonsterCard = null;
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
+
+        // Player
+        if (boardManager.playerFaction == CardDefs.Faction.Monsters && playerMonsterCard != null)
+        {
+            Debug.Log($"[AbilityManager] Player used Monsters ability");
+            AudioSystem.Instance.PlaySFX(SFX.FactionAbility);
+            boardManager.boardUI.ShowBanner(Banner.Monsters, "Monsters Ability Triggered - You keep a random unit on the board");
+            //state.PlayerUsedFactionAbility = true;
+            playerMonsterCard = null;
+
+            yield return new WaitForSeconds(boardManager.roundDelay);
+        }
     }
 
     /// <summary>
@@ -1192,6 +1297,16 @@ public class AbilityManager
     private bool IsStandardCardOnRow(List<CardData> row)
     {
         return row.Any(c => c.type == CardDefs.Type.Standard);
+    }
+
+    /// <summary>
+    /// Gets all standard cards on the given row.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private List<CardData> GetStandardCardsOnRow(List<CardData> row)
+    {
+        return row.Where(c => c.type == CardDefs.Type.Standard).ToList();
     }
 
     /// <summary>

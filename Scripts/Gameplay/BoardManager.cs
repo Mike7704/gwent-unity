@@ -270,6 +270,9 @@ public class BoardManager : Singleton<BoardManager>
         // Hide weather images
         boardUI.HideAllWeather();
 
+        // Get card to keep on the board
+        abilityManager.HandleMonstersAbilityStart();
+
         // Move all cards on both sides to graveyards
         zoneManager.MoveRowToGraveyard(state.playerMeleeSpecial, isPlayer: true);
         zoneManager.MoveRowToGraveyard(state.playerRangedSpecial, isPlayer: true);
@@ -306,6 +309,7 @@ public class BoardManager : Singleton<BoardManager>
         else
         {
             // Do faction abilities at start of round
+            yield return StartCoroutine(abilityManager.HandleMonstersAbilityEnd());
             yield return StartCoroutine(abilityManager.HandleNorthernRealmsAbility());
             yield return StartCoroutine(abilityManager.HandleScoiataelAbility());
             yield return StartCoroutine(abilityManager.HandleSkelligeAbility());

@@ -326,7 +326,13 @@ public class CardZoneManager
         // Make a copy so we can safely modify while iterating
         var cards = new List<CardData>(row);
         foreach (var card in cards)
+        {
+            // Don't discard card for monsters faction ability
+            if (card == abilityManager.playerMonsterCard || card == abilityManager.opponentMonsterCard)
+                continue;
+
             AddCardToGraveyard(card, isPlayer);
+        }
     }
 
     /// <summary>
