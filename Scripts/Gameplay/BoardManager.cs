@@ -39,7 +39,7 @@ public class BoardManager : Singleton<BoardManager>
     private BoardState state;
     private CardZoneManager zoneManager;
     private AbilityManager abilityManager;
-    private AIOpponent aiOpponent;
+    public AIOpponent aiOpponent;
 
     // Mapping of CardData to CardUI for easy access
     private readonly Dictionary<CardData, CardUI> cardUIMap = new();
@@ -637,7 +637,7 @@ public class BoardManager : Singleton<BoardManager>
         }
 
         // Handle Decoy ability separately
-        if (isPlayer && cardData.ability == CardDefs.Ability.Decoy)
+        if (cardData.ability == CardDefs.Ability.Decoy)
         {
             abilityManager.HandleDecoy(cardData, isPlayer);
             return;

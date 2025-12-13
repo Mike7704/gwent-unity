@@ -149,12 +149,14 @@ public class CardZoneManager
             AddWeatherCard(card, isPlayer);
             return;
         }
+        /*
         if (card.type == CardDefs.Type.Special || card.type == CardDefs.Type.Leader)
         {
             Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} played [{card.name}]");
             AddCardToGraveyard(card, isPlayer);
             return;
         }
+        */
 
         // Determine which zone the card is coming from
         List<CardData> fromZone = GetZoneContainingCard(card, isPlayer);

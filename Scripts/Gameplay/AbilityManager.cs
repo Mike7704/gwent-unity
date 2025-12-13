@@ -385,8 +385,16 @@ public class AbilityManager
     /// <param name="isPlayer"></param>
     public void HandleDecoy(CardData card, bool isPlayer)
     {
-        // Only player can go into decoy mode
-        if (!isPlayer || isDecoyActive) return;
+        // AI decoy handled immediately
+        if (!isPlayer)
+        {
+            Debug.Log("[AbilityManager] Waiting for AI card to decoy...");
+            HandleDecoySwap(boardManager.aiOpponent.cardToTarget, isPlayer);
+            return;
+        }
+
+        // Check we are not already in decoy mode
+        if (isDecoyActive) return;
 
         // Enter decoy targeting mode
         isDecoyActive = true;
@@ -399,7 +407,8 @@ public class AbilityManager
     }
     public void HandleDecoySwap(CardData card, bool isPlayer)
     {
-        if (!isDecoyActive || activeDecoyCard == null) return;
+        // Player is not in decoy mode
+        if (isPlayer && (!isDecoyActive || activeDecoyCard == null)) return;
 
         // If the player clicks the decoy again, cancel
         if (card == activeDecoyCard)
@@ -419,6 +428,10 @@ public class AbilityManager
             Debug.Log("[AbilityManager] Decoy can only target standard cards on the board.");
             return;
         }
+
+        // Set active decoy card for AI
+        if (!isPlayer)
+            activeDecoyCard = boardManager.aiOpponent.cardToPlay;
 
         Debug.Log($"[AbilityManager] Swapping [{card.name}] with [{activeDecoyCard.name}]");
 

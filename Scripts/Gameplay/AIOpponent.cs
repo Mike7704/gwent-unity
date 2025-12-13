@@ -1,7 +1,11 @@
+using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
+using UnityEngine.SocialPlatforms.Impl;
 
 /// <summary>
 /// Handles opponent logic for choosing and playing cards.
@@ -12,7 +16,12 @@ public class AIOpponent
     private List<CardData> hand = new List<CardData>();
     private List<CardData> deck = new List<CardData>();
     private List<CardData> graveyard = new List<CardData>();
-    private CardData cardToPlay;
+    private List<CardData> cardsOnBoard = new List<CardData>();
+
+    // Card selection
+    private List<CardOption> cardOptions = new();
+    public CardData cardToPlay;
+    public CardData cardToTarget;
 
     // Ability flags
     private bool hasCardClearWeather;
@@ -35,6 +44,11 @@ public class AIOpponent
     // Score tracking
     private int totalScore;
     private int totalPlayerScore;
+
+    // Row tracking
+    private bool isStandardSpyCardOnBoard;
+    private bool isStandardMedicCardOnBoard;
+    private bool isStandardScorchRowCardOnBoard;
 
     // Faction ability
     private bool canWinDraws;
@@ -71,15 +85,45 @@ public class AIOpponent
         }
 
         // Check ability options
+        ChooseDecoy();
         ChooseSpy();
 
-        if (cardToPlay == null)
-        {
-            cardToPlay = GetRandomCard(hand);
-            Debug.Log($"[AIOpponent] Selected random: [{cardToPlay.name}]");
-        }
+        // Now choose the best card to play
+        GetBestCardOption();
 
+        // Play the chosen card
         boardManager.HandleCardPlayed(cardToPlay, isPlayer: false);
+    }
+
+    /// <summary>
+    /// Chooses the best card option based on scores/impact.
+    /// </summary>
+    private void GetBestCardOption()
+    {
+        if (cardOptions.Count > 0)
+        {
+            // Get the highest scoring card option
+            int bestScore = cardOptions.Max(c => c.score);
+
+            // Get all options with the best score
+            List<CardOption> bestOptions = cardOptions.Where(c => c.score == bestScore).ToList();
+
+            CardOption chosenCard = bestOptions[RandomUtils.GetRandom(0, bestOptions.Count - 1)]; ;
+
+            cardToPlay = chosenCard.card;
+
+            // Check if card has a target to select after (Decoy)
+            if (chosenCard.targetCard != null)
+                cardToTarget = chosenCard.targetCard;
+
+            Debug.Log($"[AIOpponent] Selected [{cardToPlay.name}] | Score {chosenCard.score} | {chosenCard.reason}");
+        }
+        else
+        {
+            // Play a random card if no options available
+            cardToPlay = GetRandomCard(hand);
+            Debug.Log($"[AIOpponent] Selected random card: [{cardToPlay.name}]");
+        }
     }
 
     /// <summary>
@@ -87,10 +131,19 @@ public class AIOpponent
     /// </summary>
     private void ReadBoard()
     {
-        hand = state.opponentHand;
-        deck = state.opponentDeck;
-        graveyard = state.opponentGraveyard;
+        // Update hand, deck, graveyard, and board cards
+        hand = new List<CardData>(state.opponentHand);
+        deck = new List<CardData>(state.opponentDeck);
+        graveyard = new List<CardData>(state.opponentGraveyard);
+        cardsOnBoard = new List<CardData>();
+        cardsOnBoard.AddRange(state.opponentMelee);
+        cardsOnBoard.AddRange(state.opponentRanged);
+        cardsOnBoard.AddRange(state.opponentSiege);
+
+        // Reset selections
+        cardOptions.Clear();
         cardToPlay = null;
+        cardToTarget = null;
 
         // Include leader card in hand for ability checks
         if (state.opponentLeader.Any())
@@ -118,6 +171,11 @@ public class AIOpponent
         totalScore = state.GetOpponentTotalScore();
         totalPlayerScore = state.GetPlayerTotalScore();
 
+        // Board row checks
+        isStandardSpyCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
+        isStandardMedicCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
+        isStandardScorchRowCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.ScorchRow);
+
         // Faction ability check (Nilfgaard)
         canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
     }
@@ -141,22 +199,74 @@ public class AIOpponent
         return false;
     }
 
+    // -------------------------
+    // Ability Choice Functions
+    // -------------------------
+
+    /// <summary>
+    /// Check if a Decoy card should be played.
+    /// </summary>
+    private void ChooseDecoy()
+    {
+        Debug.Log("[AIOpponent] Evaluating Decoy options...");
+
+        // Check if we have a decoy card to play
+        if (!hasCardDecoy)
+            return;
+
+        // Decoy cards are the same, so just get the first one
+        CardData decoyCard = GetCardsWithAbility(hand, CardDefs.Ability.Decoy)[0];
+
+        // Select a decoy if a spy is on the board
+        if (isStandardSpyCardOnBoard && deck.Count > 0)
+        {
+            int score = 100;
+            string reason = "Decoy a spy to draw more cards";
+            CardData cardToDecoy = GetCardToDecoy(CardDefs.Ability.Spy);
+            cardOptions.Add(new CardOption(decoyCard, score, reason, cardToDecoy));
+        }
+
+        // Select a decoy if a medic is on the board
+        if (isStandardMedicCardOnBoard && graveyard.Count > 0)
+        {
+            int score = 80;
+            string reason = "Decoy a medic to play more cards";
+            CardData cardToDecoy = GetCardToDecoy(CardDefs.Ability.Medic);
+            cardOptions.Add(new CardOption(decoyCard, score, reason, cardToDecoy));
+        }
+
+        // Select a decoy if a scorch row is on the board
+        if (isStandardScorchRowCardOnBoard)
+        {
+            int score = 50;
+            string reason = "Decoy a scorch row to destroy player cards";
+            CardData cardToDecoy = GetCardToDecoy(CardDefs.Ability.ScorchRow);
+            cardOptions.Add(new CardOption(decoyCard, score, reason, cardToDecoy));
+        }
+
+        // Low on cards, time to use a decoy on any card
+        if (totalScore <= totalPlayerScore && hand.Count < 4 && state.OpponentLife == 2)
+        {
+            int score = 30;
+            string reason = "Decoy a random card to use a turn";
+            CardData cardToDecoy = GetCardToDecoy(null);
+            cardOptions.Add(new CardOption(decoyCard, score, reason, cardToDecoy));
+        }
+    }
+
+    /// <summary>
+    /// Check if a Spy card should be played.
+    /// </summary>
     private void ChooseSpy()
     {
-        Debug.Log("[AIOpponent] Evaluating spy options...");
+        Debug.Log("[AIOpponent] Evaluating Spy options...");
 
-        // Check if we have a spy card to play
-        if (!hasCardSpy)
+        // Check if we have a spy card to play and cards in deck to draw
+        if (!hasCardSpy || deck.Count == 0)
             return;
 
-        // Check there are cards we can recover
-        if (deck.Count == 0)
-            return;
-
-        List<CardData> spyCards = GetCardsWithAbility(CardDefs.Ability.Spy);
-        cardToPlay = GetRandomCard(spyCards);
-
-        Debug.Log($"[AIOpponent] Selected Spy: [{cardToPlay.name}]");
+        List<CardData> spyCards = GetCardsWithAbility(hand, CardDefs.Ability.Spy);
+        cardOptions.Add(new CardOption(GetRandomCard(spyCards), 100, "Spy to draw more cards"));
     }
 
 
@@ -179,15 +289,66 @@ public class AIOpponent
     }
 
     /// <summary>
-    /// Gets all cards in hand with a specific ability.
+    /// Gets a random card with ability from the board to decoy.
     /// </summary>
     /// <param name="ability"></param>
     /// <returns></returns>
-    private List<CardData> GetCardsWithAbility(string ability)
+    private CardData GetCardToDecoy(string ability)
     {
-        return hand.Where(c => c.ability == ability).ToList();
+        if (cardsOnBoard == null || cardsOnBoard.Count == 0)
+            return null;
+
+        List<CardData> cardsWithAbility;
+
+        // If no ability specified, pick any card
+        if (ability == null)
+            cardsWithAbility = cardsOnBoard;
+        else
+            cardsWithAbility = GetCardsWithAbility(cardsOnBoard, ability);
+
+        int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
+        return cardsWithAbility[index];
     }
 
+    /// <summary>
+    /// Gets all cards in zone with a specific ability.
+    /// </summary>
+    /// <param name="ability"></param>
+    /// <returns></returns>
+    private List<CardData> GetCardsWithAbility(List<CardData> zone, string ability)
+    {
+        return zone.Where(c => c.ability == ability).ToList();
+    }
 
+    /// <summary>
+    /// Check if a specific type with ability exists in a zone.
+    /// </summary>
+    /// <param name="zone"></param>
+    /// <param name="type"></param>
+    /// <param name="ability"></param>
+    /// <returns></returns>
+    private bool HasTypeWithAbility(List<CardData> zone, string type, string ability)
+    {
+        return zone.Any(card => card.type == type && card.ability == ability);
+    }
 
+}
+
+/// <summary>
+/// Card option with score and reason for AI decision making.
+/// </summary>
+class CardOption
+{
+    public CardData card;
+    public CardData targetCard; // for decoy
+    public int score;
+    public string reason;
+
+    public CardOption(CardData card, int score, string reason, CardData targetCard = null)
+    {
+        this.card = card;
+        this.score = score;
+        this.reason = reason;
+        this.targetCard = targetCard;
+    }
 }
