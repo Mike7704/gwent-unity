@@ -552,8 +552,14 @@ public class AbilityManager
     /// </summary>
     private IEnumerator HandleMedic(bool isPlayer)
     {
-        // Only player can go into medic mode
-        if (!isPlayer) yield break;
+        // AI medic handled immediately
+        if (!isPlayer)
+        {
+            Debug.Log("[AbilityManager] Waiting for AI card to medic...");
+            yield return new WaitForSeconds(abilityTriggerDelay);
+            HandleMedicRecover(boardManager.aiOpponent.cardToTarget, isPlayer);
+            yield break;
+        }
 
         // Check that the player graveyard is not empty
         if (state.playerGraveyard.Count == 0)
@@ -579,7 +585,8 @@ public class AbilityManager
     }
     public void HandleMedicRecover(CardData card, bool isPlayer)
     {
-        if (!isMedicActive) return;
+        // Player is not in medic mode
+        if (isPlayer && !isMedicActive) return;
 
         // Validate card is in graveyard
         List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;

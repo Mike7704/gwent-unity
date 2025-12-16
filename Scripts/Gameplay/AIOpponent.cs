@@ -40,6 +40,7 @@ public class AIOpponent
     private bool hasCardScorchRowRanged;
     private bool hasCardScorchRowSiege;
     private bool hasCardHorn;
+    private bool hasCardAvenger;
 
     // Score tracking
     private int totalScore;
@@ -87,6 +88,8 @@ public class AIOpponent
         // Check ability options
         ChooseDecoy();
         ChooseSpy();
+        ChooseMedic();
+        ChooseAvenger();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -166,6 +169,7 @@ public class AIOpponent
         hasCardScorchRowRanged = hand.Any(card => card.ability == CardDefs.Ability.ScorchRow && card.range == CardDefs.Range.Ranged);
         hasCardScorchRowSiege = hand.Any(card => card.ability == CardDefs.Ability.ScorchRow && card.range == CardDefs.Range.Siege);
         hasCardHorn = hand.Any(card => card.ability == CardDefs.Ability.Horn);
+        hasCardAvenger = hand.Any(card => card.ability == CardDefs.Ability.Avenger);
 
         // Score calculation
         totalScore = state.GetOpponentTotalScore();
@@ -269,6 +273,64 @@ public class AIOpponent
         cardOptions.Add(new CardOption(GetRandomCard(spyCards), 100, "Spy to draw more cards"));
     }
 
+    /// <summary>
+    /// Check if a Medic card should be played.
+    /// </summary>
+    private void ChooseMedic()
+    {
+        Debug.Log("[AIOpponent] Evaluating Medic options...");
+
+        // Check if we have a medic card to play
+        if (!hasCardMedic)
+            return;
+
+        bool isSpyInGraveyard = HasTypeWithAbility(graveyard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
+        bool isMedicInGraveyard = HasTypeWithAbility(graveyard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
+
+        CardData medicCard = GetRandomCard(GetCardsWithAbility(hand, CardDefs.Ability.Medic));
+
+        // Select a medic to recover a spy card
+        if (isSpyInGraveyard && deck.Count > 0)
+        {
+            int score = 60;
+            string reason = "Medic a spy to gain more cards";
+            CardData cardToMedic = GetCardToMedic(CardDefs.Ability.Spy);
+            cardOptions.Add(new CardOption(medicCard, score, reason, cardToMedic));
+        }
+
+        // Select a medic to recover a medic card
+        if (isMedicInGraveyard)
+        {
+            int score = (isSpyInGraveyard) ? 80 : 30; // Higher score if a spy to recover after using the medic
+            string reason = "Medic a medic to recover an extra card";
+            CardData cardToMedic = GetCardToMedic(CardDefs.Ability.Medic);
+            cardOptions.Add(new CardOption(medicCard, score, reason, cardToMedic));
+        }
+
+        // Select a medic for the score (we have no cards in graveyard)
+        if (graveyard.Count == 0 && hand.Count < 4)
+        {
+            int score = 10;
+            string reason = "Medic highest strength for the score";
+            CardData cardToMedic = GetCardToMedic(null);
+            cardOptions.Add(new CardOption(medicCard, score, reason, cardToMedic));
+        }
+    }
+
+    /// <summary>
+    /// Check if an Avenger card should be played.
+    /// </summary>
+    private void ChooseAvenger()
+    {
+        Debug.Log("[AIOpponent] Evaluating Avenger options...");
+
+        // Check if we have an avenger card to play
+        if (!hasCardAvenger)
+            return;
+
+        List<CardData> avengerCards = GetCardsWithAbility(hand, CardDefs.Ability.Avenger);
+        cardOptions.Add(new CardOption(GetRandomCard(avengerCards), 50, "Avenger to have for the next round"));
+    }
 
     // -------------------------
     // Helper Functions
@@ -305,6 +367,26 @@ public class AIOpponent
             cardsWithAbility = cardsOnBoard;
         else
             cardsWithAbility = GetCardsWithAbility(cardsOnBoard, ability);
+
+        int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
+        return cardsWithAbility[index];
+    }
+
+    /// <summary>
+    /// Gets a random card with ability from the graveyard to recover.
+    /// </summary>
+    /// <param name="ability"></param>
+    /// <returns></returns>
+    private CardData GetCardToMedic(string ability)
+    {
+        if (graveyard.Count == 0)
+            return null;
+
+        // If no ability specified, pick highest strength card
+        if (ability == null)
+            return graveyard[graveyard.Count];
+
+        List<CardData> cardsWithAbility = GetCardsWithAbility(graveyard, ability);
 
         int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
         return cardsWithAbility[index];
