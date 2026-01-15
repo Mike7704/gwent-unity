@@ -17,6 +17,7 @@ public class AIOpponent
     private List<CardData> deck = new List<CardData>();
     private List<CardData> graveyard = new List<CardData>();
     private List<CardData> cardsOnBoard = new List<CardData>();
+    private List<CardData> playerCardsOnBoard = new List<CardData>();
 
     // Card selection
     private List<CardOption> cardOptions = new();
@@ -90,6 +91,7 @@ public class AIOpponent
         ChooseSpy();
         ChooseMedic();
         ChooseAvenger();
+        ChooseScorch();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -142,6 +144,10 @@ public class AIOpponent
         cardsOnBoard.AddRange(state.opponentMelee);
         cardsOnBoard.AddRange(state.opponentRanged);
         cardsOnBoard.AddRange(state.opponentSiege);
+        playerCardsOnBoard = new List<CardData>();
+        playerCardsOnBoard.AddRange(state.playerMelee);
+        playerCardsOnBoard.AddRange(state.playerRanged);
+        playerCardsOnBoard.AddRange(state.playerSiege);
 
         // Reset selections
         cardOptions.Clear();
@@ -330,6 +336,44 @@ public class AIOpponent
 
         List<CardData> avengerCards = GetCardsWithAbility(hand, CardDefs.Ability.Avenger);
         cardOptions.Add(new CardOption(GetRandomCard(avengerCards), 50, "Avenger to have for the next round"));
+    }
+
+    /// <summary>
+    /// Check if a Scorch card should be played.
+    /// </summary>
+    private void ChooseScorch()
+    {
+        Debug.Log("[AIOpponent] Evaluating Scorch options...");
+
+        // Check if we have a scorch card to play
+        if (!hasCardScorch)
+            return;
+
+        // Evaluate scorch impact for standard cards on the board
+        List<CardData> scorchCards = GetCardsWithAbility(hand, CardDefs.Ability.Scorch);
+        // Find the highest strength cards on both sides
+        int highestPlayerCardStrength = playerCardsOnBoard
+            .Where(card => card.type == CardDefs.Type.Standard)
+            .Select(card => card.strength)
+            .DefaultIfEmpty(0)
+            .Max();
+        int highestNPCCardStrength = cardsOnBoard
+            .Where(card => card.type == CardDefs.Type.Standard)
+            .Select(card => card.strength)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        // Count how many cards would be destroyed on both sides
+        int playerCardsToDestroy = playerCardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
+        int npcCardsToDestroy = cardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
+
+        // Only play Scorch if it destroys more player cards than opponent cards
+        if (playerCardsToDestroy > npcCardsToDestroy)
+        {
+            int score = ((playerCardsToDestroy * highestPlayerCardStrength) - (npcCardsToDestroy * highestPlayerCardStrength)) * 2;
+            cardOptions.Add(new CardOption(GetRandomCard(scorchCards), score, "Scorch high strength player cards"));
+            return;
+        }
     }
 
     // -------------------------
