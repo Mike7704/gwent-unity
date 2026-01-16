@@ -55,14 +55,6 @@ public class AIOpponent
         // Update internal state based on the current board
         ReadBoard();
 
-        // Pass this turn?
-        if (ShouldPass())
-        {
-            Debug.Log("[AIOpponent] Passing turn...");
-            boardManager.PassRound(isPlayer: false);
-            yield break;
-        }
-
         // Check ability options
         ChooseDecoy();
         ChooseSpy();
@@ -72,6 +64,14 @@ public class AIOpponent
 
         // Now choose the best card to play
         GetBestCardOption();
+
+        // Pass if winning, no good cards, or no cards to play
+        if (ShouldPass() || cardToPlay == null)
+        {
+            Debug.Log("[AIOpponent] Passing turn...");
+            boardManager.PassRound(isPlayer: false);
+            yield break;
+        }
 
         // Play the chosen card
         boardManager.HandleCardPlayed(cardToPlay, isPlayer: false);
@@ -103,8 +103,35 @@ public class AIOpponent
         else
         {
             // Play a random card if no options available
-            cardToPlay = GetRandomCard(npcHand);
-            Debug.Log($"[AIOpponent] Selected random card: [{cardToPlay.name}]");
+            List<CardData> randomOptions = new List<CardData>();
+            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Bond));
+            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morale));
+            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Muster));
+            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.MusterPlus));
+            randomOptions.AddRange(GetCardsWithoutAbility(npcHand));
+
+            if (randomOptions.Count == 0)
+            {
+                // Lets try more options
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morph));
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme));
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Horn));
+            }
+
+            if (randomOptions.Count == 0)
+            {
+                // We must really be out of options
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.ScorchRow));
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Avenger));
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Medic));
+                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Spy));
+            }
+
+            if (randomOptions.Count > 0)
+            {
+                cardToPlay = GetRandomCard(randomOptions);
+                Debug.Log($"[AIOpponent] Selected random card: [{cardToPlay.name}]");
+            }
         }
     }
 
@@ -322,16 +349,20 @@ public class AIOpponent
             .DefaultIfEmpty(0)
             .Max();
 
+        int highestCardStrength = Mathf.Max(highestPlayerCardStrength, highestNPCCardStrength);
+
         // Count how many cards would be destroyed on both sides
-        int playerCardsToDestroy = playerCardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
-        int npcCardsToDestroy = npcCardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
+        int playerCardsToDestroy = playerCardsOnBoard.Count(card => card.strength == highestCardStrength && card.type == CardDefs.Type.Standard);
+        int npcCardsToDestroy = npcCardsOnBoard.Count(card => card.strength == highestCardStrength && card.type == CardDefs.Type.Standard);
 
         // Only play Scorch if it destroys more player cards than opponent cards
         if (playerCardsToDestroy > npcCardsToDestroy)
         {
-            int score = ((playerCardsToDestroy * highestPlayerCardStrength) - (npcCardsToDestroy * highestPlayerCardStrength)) * 2;
-            cardOptions.Add(new CardOption(GetRandomCard(scorchCards), score, "Scorch high strength player cards"));
-            return;
+            int score = (playerCardsToDestroy - npcCardsToDestroy) * highestCardStrength * 2;
+
+            // Only scorch if score is significant or we are low on cards
+            if (score >= 30 || npcHand.Count < 6)
+                cardOptions.Add(new CardOption(GetRandomCard(scorchCards), score, "Scorch high strength player cards"));
         }
     }
 
@@ -387,7 +418,7 @@ public class AIOpponent
 
         // If no ability specified, pick highest strength card
         if (ability == null)
-            return npcGraveyard[npcGraveyard.Count];
+            return npcGraveyard.OrderByDescending(c => c.strength).FirstOrDefault();
 
         List<CardData> cardsWithAbility = GetCardsWithAbility(npcGraveyard, ability);
 
@@ -403,6 +434,15 @@ public class AIOpponent
     private List<CardData> GetCardsWithAbility(List<CardData> zone, string ability)
     {
         return zone.Where(c => c.ability == ability).ToList();
+    }
+
+    /// <summary>
+    /// Gets all cards in zone without an ability.
+    /// </summary>
+    /// <returns></returns>
+    private List<CardData> GetCardsWithoutAbility(List<CardData> zone)
+    {
+        return zone.Where(c => string.IsNullOrEmpty(c.ability)).ToList();
     }
 
     /// <summary>
