@@ -1,11 +1,7 @@
-using NUnit.Framework;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
-using UnityEngine.SocialPlatforms.Impl;
 
 /// <summary>
 /// Handles opponent logic for choosing and playing cards.
@@ -13,10 +9,10 @@ using UnityEngine.SocialPlatforms.Impl;
 public class AIOpponent
 {
     // Deck state
-    private List<CardData> hand = new List<CardData>();
-    private List<CardData> deck = new List<CardData>();
-    private List<CardData> graveyard = new List<CardData>();
-    private List<CardData> cardsOnBoard = new List<CardData>();
+    private List<CardData> npcHand = new List<CardData>();
+    private List<CardData> npcDeck = new List<CardData>();
+    private List<CardData> npcGraveyard = new List<CardData>();
+    private List<CardData> npcCardsOnBoard = new List<CardData>();
     private List<CardData> playerCardsOnBoard = new List<CardData>();
 
     // Card selection
@@ -24,27 +20,8 @@ public class AIOpponent
     public CardData cardToPlay;
     public CardData cardToTarget;
 
-    // Ability flags
-    private bool hasCardClearWeather;
-    private bool hasCardFrost;
-    private bool hasCardFog;
-    private bool hasCardRain;
-    private bool hasCardStorm;
-    private bool hasCardNature;
-    private bool hasCardWhiteFrost;
-    private bool hasCardMardroeme;
-    private bool hasCardDecoy;
-    private bool hasCardSpy;
-    private bool hasCardMedic;
-    private bool hasCardScorch;
-    private bool hasCardScorchRowMelee;
-    private bool hasCardScorchRowRanged;
-    private bool hasCardScorchRowSiege;
-    private bool hasCardHorn;
-    private bool hasCardAvenger;
-
     // Score tracking
-    private int totalScore;
+    private int totalNPCScore;
     private int totalPlayerScore;
 
     // Row tracking
@@ -126,7 +103,7 @@ public class AIOpponent
         else
         {
             // Play a random card if no options available
-            cardToPlay = GetRandomCard(hand);
+            cardToPlay = GetRandomCard(npcHand);
             Debug.Log($"[AIOpponent] Selected random card: [{cardToPlay.name}]");
         }
     }
@@ -137,13 +114,13 @@ public class AIOpponent
     private void ReadBoard()
     {
         // Update hand, deck, graveyard, and board cards
-        hand = new List<CardData>(state.opponentHand);
-        deck = new List<CardData>(state.opponentDeck);
-        graveyard = new List<CardData>(state.opponentGraveyard);
-        cardsOnBoard = new List<CardData>();
-        cardsOnBoard.AddRange(state.opponentMelee);
-        cardsOnBoard.AddRange(state.opponentRanged);
-        cardsOnBoard.AddRange(state.opponentSiege);
+        npcHand = new List<CardData>(state.opponentHand);
+        npcDeck = new List<CardData>(state.opponentDeck);
+        npcGraveyard = new List<CardData>(state.opponentGraveyard);
+        npcCardsOnBoard = new List<CardData>();
+        npcCardsOnBoard.AddRange(state.opponentMelee);
+        npcCardsOnBoard.AddRange(state.opponentRanged);
+        npcCardsOnBoard.AddRange(state.opponentSiege);
         playerCardsOnBoard = new List<CardData>();
         playerCardsOnBoard.AddRange(state.playerMelee);
         playerCardsOnBoard.AddRange(state.playerRanged);
@@ -156,35 +133,16 @@ public class AIOpponent
 
         // Include leader card in hand for ability checks
         if (state.opponentLeader.Any())
-            hand.Add(state.opponentLeader[0]);
-
-        // Ability checks
-        hasCardClearWeather = hand.Any(card => card.ability == CardDefs.Ability.Clear);
-        hasCardFrost = hand.Any(card => card.ability == CardDefs.Ability.Frost);
-        hasCardFog = hand.Any(card => card.ability == CardDefs.Ability.Fog);
-        hasCardRain = hand.Any(card => card.ability == CardDefs.Ability.Rain);
-        hasCardStorm = hand.Any(card => card.ability == CardDefs.Ability.Storm);
-        hasCardNature = hand.Any(card => card.ability == CardDefs.Ability.Nature);
-        hasCardWhiteFrost = hand.Any(card => card.ability == CardDefs.Ability.WhiteFrost);
-        hasCardMardroeme = hand.Any(card => card.ability == CardDefs.Ability.Mardroeme);
-        hasCardDecoy = hand.Any(card => card.ability == CardDefs.Ability.Decoy);
-        hasCardSpy = hand.Any(card => card.ability == CardDefs.Ability.Spy);
-        hasCardMedic = hand.Any(card => card.ability == CardDefs.Ability.Medic);
-        hasCardScorch = hand.Any(card => card.ability == CardDefs.Ability.Scorch);
-        hasCardScorchRowMelee = hand.Any(card => card.ability == CardDefs.Ability.ScorchRow && card.range == CardDefs.Range.Melee);
-        hasCardScorchRowRanged = hand.Any(card => card.ability == CardDefs.Ability.ScorchRow && card.range == CardDefs.Range.Ranged);
-        hasCardScorchRowSiege = hand.Any(card => card.ability == CardDefs.Ability.ScorchRow && card.range == CardDefs.Range.Siege);
-        hasCardHorn = hand.Any(card => card.ability == CardDefs.Ability.Horn);
-        hasCardAvenger = hand.Any(card => card.ability == CardDefs.Ability.Avenger);
+            npcHand.Add(state.opponentLeader[0]);
 
         // Score calculation
-        totalScore = state.GetOpponentTotalScore();
+        totalNPCScore = state.GetOpponentTotalScore();
         totalPlayerScore = state.GetPlayerTotalScore();
 
         // Board row checks
-        isStandardSpyCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
-        isStandardMedicCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
-        isStandardScorchRowCardOnBoard = HasTypeWithAbility(cardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.ScorchRow);
+        isStandardSpyCardOnBoard = HasTypeWithAbility(npcCardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
+        isStandardMedicCardOnBoard = HasTypeWithAbility(npcCardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
+        isStandardScorchRowCardOnBoard = HasTypeWithAbility(npcCardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.ScorchRow);
 
         // Faction ability check (Nilfgaard)
         canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
@@ -199,11 +157,11 @@ public class AIOpponent
         Debug.Log("[AIOpponent] Evaluating pass options...");
 
         // No cards left to play
-        if (hand.Count == 0)
+        if (npcHand.Count == 0)
             return true;
 
         // Player has passed and we are winning
-        if (state.PlayerHasPassed && (totalScore > totalPlayerScore || (totalScore == totalPlayerScore && canWinDraws)))
+        if (state.PlayerHasPassed && (totalNPCScore > totalPlayerScore || (totalNPCScore == totalPlayerScore && canWinDraws)))
             return true;
 
         return false;
@@ -218,17 +176,16 @@ public class AIOpponent
     /// </summary>
     private void ChooseDecoy()
     {
-        Debug.Log("[AIOpponent] Evaluating Decoy options...");
+        CardData decoyCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Decoy));
 
         // Check if we have a decoy card to play
-        if (!hasCardDecoy)
+        if (decoyCard == null)
             return;
 
-        // Decoy cards are the same, so just get the first one
-        CardData decoyCard = GetCardsWithAbility(hand, CardDefs.Ability.Decoy)[0];
+        Debug.Log("[AIOpponent] Evaluating Decoy options...");
 
         // Select a decoy if a spy is on the board
-        if (isStandardSpyCardOnBoard && deck.Count > 0)
+        if (isStandardSpyCardOnBoard && npcDeck.Count > 0)
         {
             int score = 100;
             string reason = "Decoy a spy to draw more cards";
@@ -237,7 +194,7 @@ public class AIOpponent
         }
 
         // Select a decoy if a medic is on the board
-        if (isStandardMedicCardOnBoard && graveyard.Count > 0)
+        if (isStandardMedicCardOnBoard && npcGraveyard.Count > 0)
         {
             int score = 80;
             string reason = "Decoy a medic to play more cards";
@@ -255,7 +212,7 @@ public class AIOpponent
         }
 
         // Low on cards, time to use a decoy on any card
-        if (totalScore <= totalPlayerScore && hand.Count < 4 && state.OpponentLife == 2)
+        if (totalNPCScore <= totalPlayerScore && npcHand.Count < 4 && state.OpponentLife == 2)
         {
             int score = 30;
             string reason = "Decoy a random card to use a turn";
@@ -269,13 +226,14 @@ public class AIOpponent
     /// </summary>
     private void ChooseSpy()
     {
-        Debug.Log("[AIOpponent] Evaluating Spy options...");
+        List<CardData> spyCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Spy);
 
         // Check if we have a spy card to play and cards in deck to draw
-        if (!hasCardSpy || deck.Count == 0)
+        if (spyCards == null || spyCards.Count == 0 || npcDeck.Count == 0)
             return;
 
-        List<CardData> spyCards = GetCardsWithAbility(hand, CardDefs.Ability.Spy);
+        Debug.Log("[AIOpponent] Evaluating Spy options...");
+
         cardOptions.Add(new CardOption(GetRandomCard(spyCards), 100, "Spy to draw more cards"));
     }
 
@@ -284,19 +242,19 @@ public class AIOpponent
     /// </summary>
     private void ChooseMedic()
     {
-        Debug.Log("[AIOpponent] Evaluating Medic options...");
+        CardData medicCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Medic));
 
         // Check if we have a medic card to play
-        if (!hasCardMedic)
+        if (medicCard == null)
             return;
 
-        bool isSpyInGraveyard = HasTypeWithAbility(graveyard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
-        bool isMedicInGraveyard = HasTypeWithAbility(graveyard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
+        Debug.Log("[AIOpponent] Evaluating Medic options...");
 
-        CardData medicCard = GetRandomCard(GetCardsWithAbility(hand, CardDefs.Ability.Medic));
+        bool isSpyInGraveyard = HasTypeWithAbility(npcGraveyard, CardDefs.Type.Standard, CardDefs.Ability.Spy);
+        bool isMedicInGraveyard = HasTypeWithAbility(npcGraveyard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
 
         // Select a medic to recover a spy card
-        if (isSpyInGraveyard && deck.Count > 0)
+        if (isSpyInGraveyard && npcDeck.Count > 0)
         {
             int score = 60;
             string reason = "Medic a spy to gain more cards";
@@ -314,7 +272,7 @@ public class AIOpponent
         }
 
         // Select a medic for the score (we have no cards in graveyard)
-        if (graveyard.Count == 0 && hand.Count < 4)
+        if (npcGraveyard.Count == 0 && npcHand.Count < 4)
         {
             int score = 10;
             string reason = "Medic highest strength for the score";
@@ -328,13 +286,14 @@ public class AIOpponent
     /// </summary>
     private void ChooseAvenger()
     {
-        Debug.Log("[AIOpponent] Evaluating Avenger options...");
+        List<CardData> avengerCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Avenger);
 
         // Check if we have an avenger card to play
-        if (!hasCardAvenger)
+        if (avengerCards == null || avengerCards.Count == 0)
             return;
 
-        List<CardData> avengerCards = GetCardsWithAbility(hand, CardDefs.Ability.Avenger);
+        Debug.Log("[AIOpponent] Evaluating Avenger options...");
+
         cardOptions.Add(new CardOption(GetRandomCard(avengerCards), 50, "Avenger to have for the next round"));
     }
 
@@ -343,21 +302,21 @@ public class AIOpponent
     /// </summary>
     private void ChooseScorch()
     {
-        Debug.Log("[AIOpponent] Evaluating Scorch options...");
+        List<CardData> scorchCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Scorch);
 
         // Check if we have a scorch card to play
-        if (!hasCardScorch)
+        if (scorchCards == null || scorchCards.Count == 0)
             return;
 
-        // Evaluate scorch impact for standard cards on the board
-        List<CardData> scorchCards = GetCardsWithAbility(hand, CardDefs.Ability.Scorch);
+        Debug.Log("[AIOpponent] Evaluating Scorch options...");
+
         // Find the highest strength cards on both sides
         int highestPlayerCardStrength = playerCardsOnBoard
             .Where(card => card.type == CardDefs.Type.Standard)
             .Select(card => card.strength)
             .DefaultIfEmpty(0)
             .Max();
-        int highestNPCCardStrength = cardsOnBoard
+        int highestNPCCardStrength = npcCardsOnBoard
             .Where(card => card.type == CardDefs.Type.Standard)
             .Select(card => card.strength)
             .DefaultIfEmpty(0)
@@ -365,7 +324,7 @@ public class AIOpponent
 
         // Count how many cards would be destroyed on both sides
         int playerCardsToDestroy = playerCardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
-        int npcCardsToDestroy = cardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
+        int npcCardsToDestroy = npcCardsOnBoard.Count(card => card.strength == highestPlayerCardStrength && card.type == CardDefs.Type.Standard);
 
         // Only play Scorch if it destroys more player cards than opponent cards
         if (playerCardsToDestroy > npcCardsToDestroy)
@@ -401,16 +360,16 @@ public class AIOpponent
     /// <returns></returns>
     private CardData GetCardToDecoy(string ability)
     {
-        if (cardsOnBoard == null || cardsOnBoard.Count == 0)
+        if (npcCardsOnBoard == null || npcCardsOnBoard.Count == 0)
             return null;
 
         List<CardData> cardsWithAbility;
 
         // If no ability specified, pick any card
         if (ability == null)
-            cardsWithAbility = cardsOnBoard;
+            cardsWithAbility = npcCardsOnBoard;
         else
-            cardsWithAbility = GetCardsWithAbility(cardsOnBoard, ability);
+            cardsWithAbility = GetCardsWithAbility(npcCardsOnBoard, ability);
 
         int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
         return cardsWithAbility[index];
@@ -423,14 +382,14 @@ public class AIOpponent
     /// <returns></returns>
     private CardData GetCardToMedic(string ability)
     {
-        if (graveyard.Count == 0)
+        if (npcGraveyard.Count == 0)
             return null;
 
         // If no ability specified, pick highest strength card
         if (ability == null)
-            return graveyard[graveyard.Count];
+            return npcGraveyard[npcGraveyard.Count];
 
-        List<CardData> cardsWithAbility = GetCardsWithAbility(graveyard, ability);
+        List<CardData> cardsWithAbility = GetCardsWithAbility(npcGraveyard, ability);
 
         int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
         return cardsWithAbility[index];
