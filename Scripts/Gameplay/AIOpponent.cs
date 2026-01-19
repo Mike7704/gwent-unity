@@ -61,6 +61,7 @@ public class AIOpponent
         ChooseMedic();
         ChooseAvenger();
         ChooseScorch();
+        ChooseScorchRow();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -124,7 +125,6 @@ public class AIOpponent
                 randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.ScorchRow));
                 randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Avenger));
                 randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Medic));
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Spy));
             }
 
             if (randomOptions.Count > 0)
@@ -363,6 +363,61 @@ public class AIOpponent
             // Only scorch if score is significant or we are low on cards
             if (score >= 30 || npcHand.Count < 6)
                 cardOptions.Add(new CardOption(GetRandomCard(scorchCards), score, "Scorch high strength player cards"));
+        }
+    }
+
+    /// <summary>
+    /// Check if a Scorch Row card should be played.
+    /// </summary>
+    private void ChooseScorchRow()
+    {
+        List<CardData> scorchRowCards = GetCardsWithAbility(npcHand, CardDefs.Ability.ScorchRow);
+        if (scorchRowCards == null || scorchRowCards.Count == 0)
+            return;
+
+        // Evaluate each row for playing a Scorch Row
+        EvaluateScorchRow(CardDefs.Range.Melee, state.playerMelee, scorchRowCards);
+        EvaluateScorchRow(CardDefs.Range.Ranged, state.playerRanged, scorchRowCards);
+        EvaluateScorchRow(CardDefs.Range.Siege, state.playerSiege, scorchRowCards);
+    }
+
+    /// <summary>
+    /// Calculates the score for playing a Scorch Row card on a specific row.
+    /// </summary>
+    /// <param name="range"></param>
+    /// <param name="playerRow"></param>
+    /// <param name="scorchRowCards"></param>
+    private void EvaluateScorchRow(string range, List<CardData> playerRow, List<CardData> scorchRowCards)
+    {
+        // Check if the player row has a strength of 10 or more
+        if (playerRow.Count == 0 || playerRow.Sum(c => c.strength) < 10)
+            return;
+
+        CardData scorchCard = GetRandomCard(scorchRowCards.Where(c => c.range == range).ToList());
+
+        if (scorchCard == null)
+            return;
+
+        Debug.Log($"[AIOpponent] Evaluating Scorch Row {range} options...");
+
+        int highestStrength = playerRow
+            .Where(card => card.type == CardDefs.Type.Standard)
+            .Select(card => card.strength)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        if (highestStrength == 0)
+            return;
+
+        // Count how many cards would be destroyed on the player side
+        int cardsToDestroy = playerRow.Count(card => card.strength == highestStrength && card.type == CardDefs.Type.Standard);
+
+        int score = cardsToDestroy * highestStrength * 2;
+
+        // Only scorch if score is significant or we are low on cards
+        if (score >= 30 || (score >= 20 && npcHand.Count < 5))
+        {
+            cardOptions.Add( new CardOption(scorchCard, score, $"Scorch Row {range} high strength player cards"));
         }
     }
 
