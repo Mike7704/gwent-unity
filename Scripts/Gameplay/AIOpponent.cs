@@ -56,6 +56,7 @@ public class AIOpponent
         ReadBoard();
 
         // Check ability options
+        ChooseClearWeatherAbiltiy();
         ChooseDecoy();
         ChooseSpy();
         ChooseMedic();
@@ -197,6 +198,62 @@ public class AIOpponent
     // -------------------------
     // Ability Choice Functions
     // -------------------------
+
+    /// <summary>
+    /// Check if a Clear Weather card should be played.
+    /// </summary>
+    private void ChooseClearWeatherAbiltiy()
+    {
+        CardData clearWeatherCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Clear));
+
+        // Check if we have a clear weather card to play
+        if (clearWeatherCard == null)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Clear Weather options...");
+
+        // Check if any weather effects are active on the board
+        bool isFrostActive = IsWeatherActiveOnRow(CardDefs.Range.Melee);
+        bool isFogActive = IsWeatherActiveOnRow(CardDefs.Range.Ranged);
+        bool isRainActive = IsWeatherActiveOnRow(CardDefs.Range.Siege);
+
+        // Clear weather to remove negative effects and increase score
+        if (isFrostActive || isFogActive || isRainActive)
+        {
+            int score = 0;
+
+            // Calculate amount of strength restored if weather is cleared
+            int playerRestoreMelee = state.playerMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+            int playerRestoreRanged = state.playerRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+            int playerRestoreSiege = state.playerSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+
+            int npcRestoreMelee = state.opponentMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+            int npcRestoreRanged = state.opponentRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+            int npcRestoreSiege = state.opponentSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.defaultStrength - c.strength);
+
+            // Check if NPC gains strength advantage on any row by clearing weather
+            if (isFrostActive)
+                score += (npcRestoreMelee - playerRestoreMelee);
+
+            if (isFogActive)
+                score += (npcRestoreRanged - playerRestoreRanged);
+
+            if (isRainActive)
+                score += (npcRestoreSiege - playerRestoreSiege);
+
+            if (totalNPCScore < totalPlayerScore)
+                score += 5;
+
+            if (state.PlayerHasPassed && totalNPCScore + score > totalPlayerScore)
+                score += 10;
+
+            if (npcHand.Count < 4)
+                score += 5;
+
+            if (score > 15)
+                cardOptions.Add(new CardOption(clearWeatherCard, score, "Clear Weather to increase total score"));
+        }
+    }
 
     /// <summary>
     /// Check if a Decoy card should be played.
@@ -512,6 +569,37 @@ public class AIOpponent
         return zone.Any(card => card.type == type && card.ability == ability);
     }
 
+    /// <summary>
+    /// Returns true if any weather effect is active on the specified row.
+    /// </summary>
+    /// <param name="range"></param>
+    /// <returns></returns>
+    private bool IsWeatherActiveOnRow(string range)
+    {
+        // No weather cards active
+        if (state.weatherCards == null || state.weatherCards.Count == 0)
+            return false;
+
+        bool frostActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Frost);
+        bool fogActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Fog);
+        bool rainActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Rain);
+        bool stormActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Storm);
+        bool natureActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.Nature);
+        bool whiteFrostActive = state.weatherCards.Any(c => c.ability == CardDefs.Ability.WhiteFrost);
+
+        // Check if weather effect is active on the specified row
+        switch (range)
+        {
+            case CardDefs.Range.Melee:
+                return frostActive || natureActive || whiteFrostActive;
+            case CardDefs.Range.Ranged:
+                return fogActive || stormActive || whiteFrostActive;
+            case CardDefs.Range.Siege:
+                return rainActive || stormActive || natureActive;
+            default:
+                return false;
+        }
+    }
 }
 
 /// <summary>
