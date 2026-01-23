@@ -57,6 +57,7 @@ public class AIOpponent
 
         // Check ability options
         ChooseClearWeatherAbiltiy();
+        ChooseWeatherAbility();
         ChooseDecoy();
         ChooseSpy();
         ChooseMedic();
@@ -252,6 +253,111 @@ public class AIOpponent
 
             if (score > 15)
                 cardOptions.Add(new CardOption(clearWeatherCard, score, "Clear Weather to increase total score"));
+        }
+    }
+
+    /// <summary>
+    /// Check if a Weather card should be played.
+    /// </summary>
+    private void ChooseWeatherAbility()
+    {
+        // Get weather cards in hand
+        CardData frostCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Frost));
+        CardData fogCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Fog));
+        CardData rainCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Rain));
+        CardData natureCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Nature));
+        CardData stormCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Storm));
+        CardData whiteFrostCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.WhiteFrost));
+
+        // Check if we have any weather card to play
+        if (frostCard == null && fogCard == null && rainCard == null && natureCard == null && stormCard == null && whiteFrostCard == null)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Weather options...");
+
+        // Calculate amount of standard card strength on each row
+        int playerStandardMeleeStrength = state.playerMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        int playerStandardRangedStrength = state.playerRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        int playerStandardSiegeStrength = state.playerSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+
+        int npcStandardMeleeStrength = state.opponentMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        int npcStandardRangedStrength = state.opponentRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        int npcStandardSiegeStrength = state.opponentSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+
+        bool totalScoreThreshold = totalPlayerScore > 5; // Minimum total player score to consider weather
+
+        int scoreBonus = 0;
+        if (state.PlayerHasPassed)
+            scoreBonus += 10; // Bonus if player has passed as the round could be won
+        if (npcHand.Count < 4)
+            scoreBonus += 5; // Bonus if low on cards
+        if (totalNPCScore > totalPlayerScore + 15 && !state.PlayerHasPassed)
+            scoreBonus -= 5; // Penalty if already winning by a lot
+
+        // Select Frost if player melee strength is high
+        if (frostCard != null && !IsWeatherActiveOnRow(CardDefs.Range.Melee) && totalScoreThreshold &&
+            playerStandardMeleeStrength > npcStandardMeleeStrength)
+        {
+            int score = (playerStandardMeleeStrength - npcStandardMeleeStrength) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(frostCard, score, "Frost to reduce player melee strength"));
+        }
+
+        // Select Fog if player ranged strength is high
+        if (fogCard != null && !IsWeatherActiveOnRow(CardDefs.Range.Ranged) && totalScoreThreshold &&
+            playerStandardRangedStrength > npcStandardRangedStrength)
+        {
+            int score = (playerStandardRangedStrength - npcStandardRangedStrength) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(fogCard, score, "Fog to reduce player ranged strength"));
+        }
+
+        // Select Rain if player siege strength is high
+        if (rainCard != null && !IsWeatherActiveOnRow(CardDefs.Range.Siege) && totalScoreThreshold &&
+            playerStandardSiegeStrength > npcStandardSiegeStrength)
+        {
+            int score = (playerStandardSiegeStrength - npcStandardSiegeStrength) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(rainCard, score, "Rain to reduce player siege strength"));
+        }
+
+        // Select Nature if player melee and siege strength is high
+        if (natureCard != null && totalScoreThreshold &&
+            (!IsWeatherActiveOnRow(CardDefs.Range.Melee) || !IsWeatherActiveOnRow(CardDefs.Range.Siege)) &&
+            (playerStandardMeleeStrength > npcStandardMeleeStrength ||
+            playerStandardSiegeStrength > npcStandardSiegeStrength))
+        {
+            int score = ((playerStandardMeleeStrength + playerStandardSiegeStrength) - (npcStandardMeleeStrength + npcStandardSiegeStrength)) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(natureCard, score, "Nature to reduce player melee and siege strength"));
+        }
+
+        // Select Storm if player ranged and siege strength is high
+        if (stormCard != null && totalScoreThreshold &&
+            (!IsWeatherActiveOnRow(CardDefs.Range.Ranged) || !IsWeatherActiveOnRow(CardDefs.Range.Siege)) &&
+            (playerStandardRangedStrength > npcStandardRangedStrength ||
+            playerStandardSiegeStrength > npcStandardSiegeStrength))
+        {
+            int score = ((playerStandardRangedStrength + playerStandardSiegeStrength) - (npcStandardRangedStrength + npcStandardSiegeStrength)) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(stormCard, score, "Storm to reduce player ranged and siege strength"));
+        }
+
+        // Select White Frost if player melee and ranged strength is high
+        if (whiteFrostCard != null && totalScoreThreshold &&
+            (!IsWeatherActiveOnRow(CardDefs.Range.Melee) || !IsWeatherActiveOnRow(CardDefs.Range.Ranged)) &&
+            (playerStandardMeleeStrength > npcStandardMeleeStrength ||
+            playerStandardRangedStrength > npcStandardRangedStrength))
+        {
+            int score = ((playerStandardMeleeStrength + playerStandardRangedStrength) - (npcStandardMeleeStrength + npcStandardRangedStrength)) + scoreBonus;
+
+            if (score > 10)
+                cardOptions.Add(new CardOption(whiteFrostCard, score, "White Frost to reduce player melee and ranged strength"));
         }
     }
 
