@@ -146,26 +146,26 @@ public class BoardUI : MonoBehaviour
     /// <summary>
     /// Shows or hides row highlight for a given row.
     /// </summary>
-    public void ShowRowHightlight(PlayerZone row, bool show)
+    public void ShowRowHightlight(RowZone row, bool show)
     {
         switch (row)
         {
-            case PlayerZone.MeleeSpecial:
+            case RowZone.PlayerMeleeSpecial:
                 PlayerMeleeSpecialHighlight.enabled = show;
                 break;
-            case PlayerZone.RangedSpecial:
+            case RowZone.PlayerRangedSpecial:
                 PlayerRangedSpecialHighlight.enabled = show;
                 break;
-            case PlayerZone.SiegeSpecial:
+            case RowZone.PlayerSiegeSpecial:
                 PlayerSiegeSpecialHighlight.enabled = show;
                 break;
-            case PlayerZone.MeleeRow:
+            case RowZone.PlayerMeleeRow:
                 PlayerMeleeRowHighlight.enabled = show;
                 break;
-            case PlayerZone.RangedRow:
+            case RowZone.PlayerRangedRow:
                 PlayerRangedRowHighlight.enabled = show;
                 break;
-            case PlayerZone.SiegeRow:
+            case RowZone.PlayerSiegeRow:
                 PlayerSiegeRowHighlight.enabled = show;
                 break;
             default:
@@ -275,14 +275,21 @@ public class BoardUI : MonoBehaviour
     }
 }
 
-public enum PlayerZone
+public enum RowZone
 {
-    MeleeSpecial,
-    RangedSpecial,
-    SiegeSpecial,
-    MeleeRow,
-    RangedRow,
-    SiegeRow
+    PlayerMeleeSpecial,
+    PlayerRangedSpecial,
+    PlayerSiegeSpecial,
+    PlayerMeleeRow,
+    PlayerRangedRow,
+    PlayerSiegeRow,
+    OpponentMeleeSpecial,
+    OpponentRangedSpecial,
+    OpponentSiegeSpecial,
+    OpponentMeleeRow,
+    OpponentRangedRow,
+    OpponentSiegeRow,
+    None // AIOpponent
 }
 
 public enum Banner

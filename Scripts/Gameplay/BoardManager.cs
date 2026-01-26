@@ -38,7 +38,7 @@ public class BoardManager : Singleton<BoardManager>
 
     private BoardState state;
     private CardZoneManager zoneManager;
-    private AbilityManager abilityManager;
+    public AbilityManager abilityManager;
     public AIOpponent aiOpponent;
 
     // Mapping of CardData to CardUI for easy access
@@ -743,13 +743,13 @@ public class BoardManager : Singleton<BoardManager>
     /// </summary>
     public void InitialiseRowZoneButtons()
     {
-        PlayerMeleeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.MeleeSpecial));
-        PlayerRangedSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.RangedSpecial));
-        PlayerSiegeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.SiegeSpecial));
+        PlayerMeleeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerMeleeSpecial));
+        PlayerRangedSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerRangedSpecial));
+        PlayerSiegeSpecialZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerSiegeSpecial));
 
-        PlayerMeleeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.MeleeRow));
-        PlayerRangedRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.RangedRow));
-        PlayerSiegeRowZoneButton.onClick.AddListener(() => HandleRowClicked(PlayerZone.SiegeRow));
+        PlayerMeleeRowZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerMeleeRow));
+        PlayerRangedRowZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerRangedRow));
+        PlayerSiegeRowZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerSiegeRow));
 
         DisableAllRowZoneButtons();
     }
@@ -757,7 +757,7 @@ public class BoardManager : Singleton<BoardManager>
     /// <summary>
     /// Handles clicks on row zones
     /// </summary>
-    private void HandleRowClicked(PlayerZone row)
+    private void HandleRowClicked(RowZone row)
     {
         if (abilityManager.isAgileActive)
         {
@@ -767,33 +767,33 @@ public class BoardManager : Singleton<BoardManager>
         else if (abilityManager.isSpecialCardActive)
         {
             // Special horn or mardroeme card is active, handle row selection
-            abilityManager.HandleSpecialCardSelection(row, isPlayer: true);
+            abilityManager.HandleSpecialCardSelection(abilityManager.activeSpecialCard, row, isPlayer: true);
         }
     }
 
     /// <summary>
     /// Shows or hides row buttons for player to select
     /// </summary>
-    public void EnableRowZoneButton(PlayerZone row, bool enable)
+    public void EnableRowZoneButton(RowZone row, bool enable)
     {
         switch (row)
         {
-            case PlayerZone.MeleeSpecial:
+            case RowZone.PlayerMeleeSpecial:
                 PlayerMeleeSpecialZoneButton.gameObject.SetActive(enable);
                 break;
-            case PlayerZone.RangedSpecial:
+            case RowZone.PlayerRangedSpecial:
                 PlayerRangedSpecialZoneButton.gameObject.SetActive(enable);
                 break;
-            case PlayerZone.SiegeSpecial:
+            case RowZone.PlayerSiegeSpecial:
                 PlayerSiegeSpecialZoneButton.gameObject.SetActive(enable);
                 break;
-            case PlayerZone.MeleeRow:
+            case RowZone.PlayerMeleeRow:
                 PlayerMeleeRowZoneButton.gameObject.SetActive(enable);
                 break;
-            case PlayerZone.RangedRow:
+            case RowZone.PlayerRangedRow:
                 PlayerRangedRowZoneButton.gameObject.SetActive(enable);
                 break;
-            case PlayerZone.SiegeRow:
+            case RowZone.PlayerSiegeRow:
                 PlayerSiegeRowZoneButton.gameObject.SetActive(enable);
                 break;
             default:

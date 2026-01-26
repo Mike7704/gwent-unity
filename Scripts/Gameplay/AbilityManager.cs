@@ -21,7 +21,7 @@ public class AbilityManager
 
     // Special horn or mardroeme card
     public bool isSpecialCardActive = false;
-    private CardData activeSpecialCard = null;
+    public CardData activeSpecialCard = null;
 
     // Decoy
     public bool isDecoyActive = false;
@@ -149,35 +149,53 @@ public class AbilityManager
         // Enter special card mode
         isSpecialCardActive = true;
         activeSpecialCard = card;
-        boardManager.EnableRowZoneButton(PlayerZone.MeleeSpecial, !state.playerMeleeSpecial.Any());
-        boardManager.EnableRowZoneButton(PlayerZone.RangedSpecial, !state.playerRangedSpecial.Any());
-        boardManager.EnableRowZoneButton(PlayerZone.SiegeSpecial, !state.playerSiegeSpecial.Any());
+        boardManager.EnableRowZoneButton(RowZone.PlayerMeleeSpecial, !state.playerMeleeSpecial.Any());
+        boardManager.EnableRowZoneButton(RowZone.PlayerRangedSpecial, !state.playerRangedSpecial.Any());
+        boardManager.EnableRowZoneButton(RowZone.PlayerSiegeSpecial, !state.playerSiegeSpecial.Any());
 
         Debug.Log("[AbilityManager] Waiting for special row selection...");
     }
-    public void HandleSpecialCardSelection(PlayerZone row, bool isPlayer)
+    public void HandleSpecialCardSelection(CardData specialCard, RowZone row, bool isPlayer)
     {
-        if (!isSpecialCardActive || activeSpecialCard == null) return;
+        if ((isPlayer && !isSpecialCardActive) || specialCard == null) return;
 
         // Apply the row for the special card to be place on
         switch (row)
         {
-            case PlayerZone.MeleeSpecial:
+            case RowZone.PlayerMeleeSpecial:
                 if (state.playerMeleeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
-                activeSpecialCard.range = CardDefs.Range.Melee;
-                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                specialCard.range = CardDefs.Range.Melee;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: true);
                 break;
 
-            case PlayerZone.RangedSpecial:
+            case RowZone.PlayerRangedSpecial:
                 if (state.playerRangedSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
-                activeSpecialCard.range = CardDefs.Range.Ranged;
-                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                specialCard.range = CardDefs.Range.Ranged;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: true);
                 break;
 
-            case PlayerZone.SiegeSpecial:
+            case RowZone.PlayerSiegeSpecial:
                 if (state.playerSiegeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
-                activeSpecialCard.range = CardDefs.Range.Siege;
-                zoneManager.AddSpecialCard(activeSpecialCard, isPlayer);
+                specialCard.range = CardDefs.Range.Siege;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: true);
+                break;
+
+            case RowZone.OpponentMeleeSpecial:
+                if (state.opponentMeleeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                specialCard.range = CardDefs.Range.Melee;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: false);
+                break;
+
+            case RowZone.OpponentRangedSpecial:
+                if (state.opponentRangedSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                specialCard.range = CardDefs.Range.Ranged;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: false);
+                break;
+
+            case RowZone.OpponentSiegeSpecial:
+                if (state.opponentSiegeSpecial.Any()) { Debug.Log("Slot already occupied."); return; }
+                specialCard.range = CardDefs.Range.Siege;
+                zoneManager.AddSpecialCard(specialCard, isPlayer: false);
                 break;
 
             default:
@@ -185,7 +203,7 @@ public class AbilityManager
                 return;
         }
 
-        boardManager.lastPlayedCard = activeSpecialCard;
+        boardManager.lastPlayedCard = specialCard;
         boardManager.lastPlayedByPlayer = isPlayer;
 
         activeSpecialCard = null;
@@ -219,18 +237,18 @@ public class AbilityManager
         // Enter agile mode
         isAgileActive = true;
         activeAgileCard = card;
-        boardManager.EnableRowZoneButton(PlayerZone.MeleeRow, true);
-        boardManager.EnableRowZoneButton(PlayerZone.RangedRow, true);
-        boardManager.EnableRowZoneButton(PlayerZone.SiegeRow, false); // Just to be safe
+        boardManager.EnableRowZoneButton(RowZone.PlayerMeleeRow, true);
+        boardManager.EnableRowZoneButton(RowZone.PlayerRangedRow, true);
+        boardManager.EnableRowZoneButton(RowZone.PlayerSiegeRow, false); // Just to be safe
 
         Debug.Log("[AbilityManager] Waiting for row selection...");
     }
-    public void HandleAgileSelection(PlayerZone row,  bool isPlayer)
+    public void HandleAgileSelection(RowZone row,  bool isPlayer)
     {
         if (!isAgileActive || activeAgileCard == null) return;
 
         // Apply the range for the agile card to be place on
-        activeAgileCard.range = row == PlayerZone.MeleeRow ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
+        activeAgileCard.range = row == RowZone.PlayerMeleeRow ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
 
         zoneManager.AddCardToBoard(activeAgileCard, isPlayer);
 
@@ -399,9 +417,9 @@ public class AbilityManager
         // Enter decoy targeting mode
         isDecoyActive = true;
         activeDecoyCard = card;
-        boardManager.boardUI.ShowRowHightlight(PlayerZone.MeleeRow, IsStandardCardOnRow(state.playerMelee));
-        boardManager.boardUI.ShowRowHightlight(PlayerZone.RangedRow, IsStandardCardOnRow(state.playerRanged));
-        boardManager.boardUI.ShowRowHightlight(PlayerZone.SiegeRow, IsStandardCardOnRow(state.playerSiege));
+        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerMeleeRow, IsStandardCardOnRow(state.playerMelee));
+        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerRangedRow, IsStandardCardOnRow(state.playerRanged));
+        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerSiegeRow, IsStandardCardOnRow(state.playerSiege));
 
         Debug.Log("[AbilityManager] Waiting for card to decoy...");
     }

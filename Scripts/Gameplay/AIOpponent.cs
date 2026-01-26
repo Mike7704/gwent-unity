@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,7 @@ public class AIOpponent
     private List<CardOption> cardOptions = new();
     public CardData cardToPlay;
     public CardData cardToTarget;
+    private RowZone rowToTarget;
 
     // Score tracking
     private int totalNPCScore;
@@ -28,6 +30,14 @@ public class AIOpponent
     private bool isStandardSpyCardOnBoard;
     private bool isStandardMedicCardOnBoard;
     private bool isStandardScorchRowCardOnBoard;
+
+    // Standard card strength calculations
+    private int playerStandardMeleeStrength;
+    private int playerStandardRangedStrength;
+    private int playerStandardSiegeStrength;
+    private int npcStandardMeleeStrength;
+    private int npcStandardRangedStrength;
+    private int npcStandardSiegeStrength;
 
     // Faction ability
     private bool canWinDraws;
@@ -64,6 +74,7 @@ public class AIOpponent
         ChooseAvenger();
         ChooseScorch();
         ChooseScorchRow();
+        ChooseHorn();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -73,6 +84,13 @@ public class AIOpponent
         {
             Debug.Log("[AIOpponent] Passing turn...");
             boardManager.PassRound(isPlayer: false);
+            yield break;
+        }
+
+        // Handle special card (horn/mardroeme)
+        if (rowToTarget != RowZone.None)
+        {
+            boardManager.abilityManager.HandleSpecialCardSelection(cardToPlay, rowToTarget, isPlayer: false);
             yield break;
         }
 
@@ -100,6 +118,10 @@ public class AIOpponent
             // Check if card has a target to select after (Decoy)
             if (chosenCard.targetCard != null)
                 cardToTarget = chosenCard.targetCard;
+
+            // Check if card has a target row to select (horn/mardroeme)
+            if (chosenCard.targetRow != RowZone.None)
+                rowToTarget = chosenCard.targetRow;
 
             Debug.Log($"[AIOpponent] Selected [{cardToPlay.name}] | Score {chosenCard.score} | {chosenCard.reason}");
         }
@@ -159,6 +181,7 @@ public class AIOpponent
         cardOptions.Clear();
         cardToPlay = null;
         cardToTarget = null;
+        rowToTarget = RowZone.None;
 
         // Include leader card in hand for ability checks
         if (state.opponentLeader.Any())
@@ -173,8 +196,16 @@ public class AIOpponent
         isStandardMedicCardOnBoard = HasTypeWithAbility(npcCardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.Medic);
         isStandardScorchRowCardOnBoard = HasTypeWithAbility(npcCardsOnBoard, CardDefs.Type.Standard, CardDefs.Ability.ScorchRow);
 
-        // Faction ability check (Nilfgaard)
-        canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
+        // Standard card strength calculations
+        playerStandardMeleeStrength = state.playerMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        playerStandardRangedStrength = state.playerRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        playerStandardSiegeStrength = state.playerSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        npcStandardMeleeStrength = state.opponentMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        npcStandardRangedStrength = state.opponentRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+        npcStandardSiegeStrength = state.opponentSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
+
+    // Faction ability check (Nilfgaard)
+    canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
     }
 
     /// <summary>
@@ -274,15 +305,6 @@ public class AIOpponent
             return;
 
         Debug.Log("[AIOpponent] Evaluating Weather options...");
-
-        // Calculate amount of standard card strength on each row
-        int playerStandardMeleeStrength = state.playerMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
-        int playerStandardRangedStrength = state.playerRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
-        int playerStandardSiegeStrength = state.playerSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
-
-        int npcStandardMeleeStrength = state.opponentMelee.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
-        int npcStandardRangedStrength = state.opponentRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
-        int npcStandardSiegeStrength = state.opponentSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
 
         bool totalScoreThreshold = totalPlayerScore > 5; // Minimum total player score to consider weather
 
@@ -584,6 +606,81 @@ public class AIOpponent
         }
     }
 
+    /// <summary>
+    /// Check if a Horn card should be played.
+    /// </summary>
+    private void ChooseHorn()
+    {
+        List<CardData> hornCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Horn);
+
+        // Check if we have a horn card to play
+        if (hornCards == null || hornCards.Count == 0)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Horn options...");
+
+        // Get horn cards by range
+        CardData meleeHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Melee).ToList());
+        CardData agileHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Agile).ToList());
+        CardData rangedHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Ranged).ToList());
+        CardData siegeHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Siege).ToList());
+        CardData specialHornCard = GetRandomCard(hornCards.Where(c => c.type == CardDefs.Type.Special).ToList());
+
+        // Check if horn is already active on rows
+        bool isHornActiveOnMelee = state.opponentMeleeSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
+        bool isHornActiveOnRanged = state.opponentRangedSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
+        bool isHornActiveOnSiege = state.opponentSiegeSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
+
+        // Check if horn should be played on rows
+        int hornGainThreshold = (npcHand.Count < 4) ? 0 : 15;
+        bool shouldHornMeleeRow = CalculateHornRowStrength(state.opponentMelee) >= npcStandardMeleeStrength && npcStandardMeleeStrength >= hornGainThreshold;
+        bool shouldHornRangedRow = CalculateHornRowStrength(state.opponentRanged) >= npcStandardRangedStrength && npcStandardRangedStrength >= hornGainThreshold;
+        bool shouldHornSiegeRow = CalculateHornRowStrength(state.opponentSiege) >= npcStandardSiegeStrength && npcStandardSiegeStrength >= hornGainThreshold;
+
+        // Evaluate horn options
+        if (meleeHornCard != null && !isHornActiveOnMelee && shouldHornMeleeRow)
+            cardOptions.Add(new CardOption(meleeHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength"));
+
+        if (rangedHornCard != null && !isHornActiveOnRanged && shouldHornRangedRow)
+            cardOptions.Add(new CardOption(rangedHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength"));
+
+        if (siegeHornCard != null && !isHornActiveOnSiege && shouldHornSiegeRow)
+            cardOptions.Add(new CardOption(siegeHornCard, npcStandardSiegeStrength, "Horn to increase siege row strength"));
+
+        // Need to decide which row to add the agile horn card
+        if (agileHornCard != null)
+        {
+            if (!isHornActiveOnMelee && shouldHornMeleeRow && npcStandardMeleeStrength >= npcStandardRangedStrength)
+            {
+                cardOptions.Add(new CardOption(agileHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength"));
+            }
+            else if (!isHornActiveOnRanged && shouldHornRangedRow)
+            {
+                cardOptions.Add(new CardOption(agileHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength"));
+            }
+        }
+
+        // Need to decide which row to add the special horn card
+        if (specialHornCard != null)
+        {
+            if (!isHornActiveOnMelee && shouldHornMeleeRow && state.opponentMeleeSpecial.Count == 0 &&
+                npcStandardMeleeStrength >= npcStandardRangedStrength && npcStandardMeleeStrength >= npcStandardSiegeStrength)
+            {
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength", null, RowZone.OpponentMeleeSpecial));
+            }
+            else if (!isHornActiveOnRanged && shouldHornRangedRow && state.opponentRangedSpecial.Count == 0 &&
+                npcStandardRangedStrength >= npcStandardMeleeStrength && npcStandardRangedStrength >= npcStandardSiegeStrength)
+            {
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength", null, RowZone.OpponentRangedSpecial));
+            }
+            else if (!isHornActiveOnSiege && shouldHornSiegeRow && state.opponentSiegeSpecial.Count == 0 &&
+                npcStandardSiegeStrength >= npcStandardMeleeStrength && npcStandardSiegeStrength >= npcStandardRangedStrength)
+            {
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardSiegeStrength, "Horn to increase siege row strength", null, RowZone.OpponentSiegeSpecial));
+            }
+        }
+    }
+
     // -------------------------
     // Helper Functions
     // -------------------------
@@ -706,6 +803,25 @@ public class AIOpponent
                 return false;
         }
     }
+
+    /// <summary>
+    /// Calculates the total strength of standard cards on a row with horn effect.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private int CalculateHornRowStrength(List<CardData> row)
+    {
+        int strength = 0;
+        foreach (var card in row)
+        {
+            // Skip boosting non-standard cards and horn cards
+            if (card.type != CardDefs.Type.Standard || card.ability == CardDefs.Ability.Horn)
+                continue;
+
+            strength += card.strength * 2;
+        }
+        return strength;
+    }
 }
 
 /// <summary>
@@ -715,14 +831,16 @@ class CardOption
 {
     public CardData card;
     public CardData targetCard; // for decoy
+    public RowZone targetRow; // for horn and mardroeme
     public int score;
     public string reason;
 
-    public CardOption(CardData card, int score, string reason, CardData targetCard = null)
+    public CardOption(CardData card, int score, string reason, CardData targetCard = null, RowZone targetRow = RowZone.None)
     {
         this.card = card;
         this.score = score;
         this.reason = reason;
         this.targetCard = targetCard;
+        this.targetRow = targetRow;
     }
 }
