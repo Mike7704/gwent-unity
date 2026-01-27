@@ -75,6 +75,7 @@ public class AIOpponent
         ChooseScorch();
         ChooseScorchRow();
         ChooseHorn();
+        ChooseMardroeme();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -631,30 +632,41 @@ public class AIOpponent
         bool isHornActiveOnRanged = state.opponentRangedSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
         bool isHornActiveOnSiege = state.opponentSiegeSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
 
+        // Check if special rows are empty so we can play a special horn card
+        bool isMeleeSpecialEmpty = state.opponentMeleeSpecial.Count == 0;
+        bool isRangedSpecialEmpty = state.opponentRangedSpecial.Count == 0;
+        bool isSiegeSpecialEmpty = state.opponentSiegeSpecial.Count == 0;
+
         // Check if horn should be played on rows
         int hornGainThreshold = (npcHand.Count < 4) ? 0 : 15;
         bool shouldHornMeleeRow = CalculateHornRowStrength(state.opponentMelee) >= npcStandardMeleeStrength && npcStandardMeleeStrength >= hornGainThreshold;
         bool shouldHornRangedRow = CalculateHornRowStrength(state.opponentRanged) >= npcStandardRangedStrength && npcStandardRangedStrength >= hornGainThreshold;
         bool shouldHornSiegeRow = CalculateHornRowStrength(state.opponentSiege) >= npcStandardSiegeStrength && npcStandardSiegeStrength >= hornGainThreshold;
 
+        // Want to avoid a horn unit card from blocking a special mardroeme card (if we have morph cards)
+        bool hasMardroemeSpecialCard = HasTypeWithAbility(npcHand, CardDefs.Type.Special, CardDefs.Ability.Mardroeme);
+        bool shouldMardroemeMeleeFirst = hasMardroemeSpecialCard && state.opponentMelee.Any(c => c.ability == CardDefs.Ability.Morph);
+        bool shouldMardroemeRangedFirst = hasMardroemeSpecialCard && state.opponentRanged.Any(c => c.ability == CardDefs.Ability.Morph);
+        bool shouldMardroemeSiegeFirst = hasMardroemeSpecialCard && state.opponentSiege.Any(c => c.ability == CardDefs.Ability.Morph);
+
         // Evaluate horn options
-        if (meleeHornCard != null && !isHornActiveOnMelee && shouldHornMeleeRow)
+        if (meleeHornCard != null && !isHornActiveOnMelee && shouldHornMeleeRow && !shouldMardroemeMeleeFirst)
             cardOptions.Add(new CardOption(meleeHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength"));
 
-        if (rangedHornCard != null && !isHornActiveOnRanged && shouldHornRangedRow)
+        if (rangedHornCard != null && !isHornActiveOnRanged && shouldHornRangedRow && !shouldMardroemeRangedFirst)
             cardOptions.Add(new CardOption(rangedHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength"));
 
-        if (siegeHornCard != null && !isHornActiveOnSiege && shouldHornSiegeRow)
+        if (siegeHornCard != null && !isHornActiveOnSiege && shouldHornSiegeRow && !shouldMardroemeSiegeFirst)
             cardOptions.Add(new CardOption(siegeHornCard, npcStandardSiegeStrength, "Horn to increase siege row strength"));
 
         // Need to decide which row to add the agile horn card
         if (agileHornCard != null)
         {
-            if (!isHornActiveOnMelee && shouldHornMeleeRow && npcStandardMeleeStrength >= npcStandardRangedStrength)
+            if (!isHornActiveOnMelee && shouldHornMeleeRow && !shouldMardroemeMeleeFirst && meleeHornCard == null && npcStandardMeleeStrength >= npcStandardRangedStrength)
             {
                 cardOptions.Add(new CardOption(agileHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength"));
             }
-            else if (!isHornActiveOnRanged && shouldHornRangedRow)
+            else if (!isHornActiveOnRanged && shouldHornRangedRow && !shouldMardroemeRangedFirst)
             {
                 cardOptions.Add(new CardOption(agileHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength"));
             }
@@ -663,20 +675,104 @@ public class AIOpponent
         // Need to decide which row to add the special horn card
         if (specialHornCard != null)
         {
-            if (!isHornActiveOnMelee && shouldHornMeleeRow && state.opponentMeleeSpecial.Count == 0 &&
-                npcStandardMeleeStrength >= npcStandardRangedStrength && npcStandardMeleeStrength >= npcStandardSiegeStrength)
+            if (!isHornActiveOnMelee && shouldHornMeleeRow && isMeleeSpecialEmpty &&
+                (npcStandardMeleeStrength >= npcStandardRangedStrength || !isRangedSpecialEmpty) &&
+                (npcStandardMeleeStrength >= npcStandardSiegeStrength || !isSiegeSpecialEmpty))
             {
-                cardOptions.Add(new CardOption(specialHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength", null, RowZone.OpponentMeleeSpecial));
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardMeleeStrength - 1, "Horn to increase melee row strength", null, RowZone.OpponentMeleeSpecial));
             }
-            else if (!isHornActiveOnRanged && shouldHornRangedRow && state.opponentRangedSpecial.Count == 0 &&
-                npcStandardRangedStrength >= npcStandardMeleeStrength && npcStandardRangedStrength >= npcStandardSiegeStrength)
+            else if (!isHornActiveOnRanged && shouldHornRangedRow && isRangedSpecialEmpty &&
+                (npcStandardRangedStrength >= npcStandardMeleeStrength || !isMeleeSpecialEmpty) &&
+                (npcStandardRangedStrength >= npcStandardSiegeStrength || !isSiegeSpecialEmpty))
             {
-                cardOptions.Add(new CardOption(specialHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength", null, RowZone.OpponentRangedSpecial));
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardRangedStrength - 1, "Horn to increase ranged row strength", null, RowZone.OpponentRangedSpecial));
             }
-            else if (!isHornActiveOnSiege && shouldHornSiegeRow && state.opponentSiegeSpecial.Count == 0 &&
-                npcStandardSiegeStrength >= npcStandardMeleeStrength && npcStandardSiegeStrength >= npcStandardRangedStrength)
+            else if (!isHornActiveOnSiege && shouldHornSiegeRow && isSiegeSpecialEmpty &&
+                (npcStandardSiegeStrength >= npcStandardMeleeStrength || !isMeleeSpecialEmpty) &&
+                (npcStandardSiegeStrength >= npcStandardRangedStrength || !isRangedSpecialEmpty))
             {
-                cardOptions.Add(new CardOption(specialHornCard, npcStandardSiegeStrength, "Horn to increase siege row strength", null, RowZone.OpponentSiegeSpecial));
+                cardOptions.Add(new CardOption(specialHornCard, npcStandardSiegeStrength - 1, "Horn to increase siege row strength", null, RowZone.OpponentSiegeSpecial));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Check if a Mardroeme card should be played.
+    /// </summary>
+    private void ChooseMardroeme()
+    {
+        List<CardData> mardroemeCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme);
+
+        // Check if we have a mardroeme card to play
+        if (mardroemeCards == null || mardroemeCards.Count == 0)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Mardroeme options...");
+
+        // Get mardroeme cards by range
+        CardData meleeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Melee).ToList());
+        CardData agileMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Agile).ToList());
+        CardData rangedMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Ranged).ToList());
+        CardData siegeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Siege).ToList());
+        CardData specialMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.type == CardDefs.Type.Special).ToList());
+
+        // Check if mardroeme is already active on rows
+        bool isMardroemeActiveOnMelee = state.opponentMeleeSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
+        bool isMardroemeActiveOnRanged = state.opponentRangedSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
+        bool isMardroemeActiveOnSiege = state.opponentSiegeSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
+
+        // Check if special rows are empty so we can play a special mardroeme card
+        bool isMeleeSpecialEmpty = state.opponentMeleeSpecial.Count == 0;
+        bool isRangedSpecialEmpty = state.opponentRangedSpecial.Count == 0;
+        bool isSiegeSpecialEmpty = state.opponentSiegeSpecial.Count == 0;
+
+        // Check if a morph card is on a row to be transformed
+        bool shouldMardroemeMeleeRow = state.opponentMelee.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
+        bool shouldMardroemeRangedRow = state.opponentRanged.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
+        bool shouldMardroemeSiegeRow = state.opponentSiege.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
+
+        // Want to avoid a mardroeme unit card from blocking a special horn card
+        bool hasHornSpecialCard = HasTypeWithAbility(npcHand, CardDefs.Type.Special, CardDefs.Ability.Horn);
+
+        int score = 40;
+
+        // Evaluate mardroeme options
+        if (meleeMardroemeCard != null && !isMardroemeActiveOnMelee && shouldMardroemeMeleeRow && !hasHornSpecialCard)
+            cardOptions.Add(new CardOption(meleeMardroemeCard, score, "Mardroeme to transform morph cards on melee row"));
+
+        if (rangedMardroemeCard != null && !isMardroemeActiveOnRanged && shouldMardroemeRangedRow && !hasHornSpecialCard)
+            cardOptions.Add(new CardOption(rangedMardroemeCard, score, "Mardroeme to transform morph cards on ranged row"));
+
+        if (siegeMardroemeCard != null && !isMardroemeActiveOnSiege && shouldMardroemeSiegeRow && !hasHornSpecialCard)
+            cardOptions.Add(new CardOption(siegeMardroemeCard, score, "Mardroeme to transform morph cards on siege row"));
+
+        // Need to decide which row to add the agile mardroeme card
+        if (agileMardroemeCard != null)
+        {
+            if (!isMardroemeActiveOnMelee && shouldMardroemeMeleeRow && !hasHornSpecialCard && meleeMardroemeCard == null)
+            {
+                cardOptions.Add(new CardOption(agileMardroemeCard, score, "Mardroeme to transform morph cards on melee row"));
+            }
+            else if (!isMardroemeActiveOnRanged && shouldMardroemeRangedRow && !hasHornSpecialCard)
+            {
+                cardOptions.Add(new CardOption(agileMardroemeCard, score, "Mardroeme to transform morph cards on ranged row"));
+            }
+        }
+
+        // Need to decide which row to add the special mardroeme card
+        if (specialMardroemeCard != null)
+        {
+            if (!isMardroemeActiveOnMelee && shouldMardroemeMeleeRow && isMeleeSpecialEmpty)
+            {
+                cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on melee row", null, RowZone.OpponentMeleeSpecial));
+            }
+            else if (!isMardroemeActiveOnRanged && shouldMardroemeRangedRow && isRangedSpecialEmpty)
+            {
+                cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on ranged row", null, RowZone.OpponentRangedSpecial));
+            }
+            else if (!isMardroemeActiveOnSiege && shouldMardroemeSiegeRow && isSiegeSpecialEmpty)
+            {
+                cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on siege row", null, RowZone.OpponentSiegeSpecial));
             }
         }
     }
