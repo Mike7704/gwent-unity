@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 /// <summary>
 /// Handles opponent logic for choosing and playing cards.
@@ -72,6 +73,7 @@ public class AIOpponent
         ChooseSpy();
         ChooseMedic();
         ChooseAvenger();
+        ChooseBond();
         ChooseScorch();
         ChooseScorchRow();
         ChooseHorn();
@@ -508,6 +510,37 @@ public class AIOpponent
         Debug.Log("[AIOpponent] Evaluating Avenger options...");
 
         cardOptions.Add(new CardOption(GetRandomCard(avengerCards), 50, "Avenger to have for the next round"));
+    }
+
+    /// <summary>
+    /// Check if an Bond card should be played.
+    /// </summary>
+    private void ChooseBond()
+    {
+        List<CardData> bondCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Bond);
+
+        // Check if we have a bond card to play
+        if (bondCards == null || bondCards.Count == 0)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Bond options...");
+
+        // Select a bond card if target bond is on the board
+        foreach (var card in bondCards)
+        {
+            // Get the cards that this bond card targets
+            foreach (var target in card.target)
+            {
+                // Player and opponent cards (-1000)
+                if (npcCardsOnBoard.Any(c => c.id == target.id || c.id - 1000 == target.id))
+                {
+                    int existingBonds = npcCardsOnBoard.Count(c => c.id == target.id || c.id - 1000 == target.id);
+                    int score = (card.strength * existingBonds * 3) + 5;
+                    cardOptions.Add(new CardOption(card, score, "Bond to increase strength"));
+                    break;
+                }
+            }
+        }
     }
 
     /// <summary>
