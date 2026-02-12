@@ -78,6 +78,7 @@ public class AIOpponent
         ChooseScorchRow();
         ChooseHorn();
         ChooseMardroeme();
+        ChooseAgile();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -596,6 +597,8 @@ public class AIOpponent
 
         // Evaluate each row for playing a Scorch Row
         EvaluateScorchRow(CardDefs.Range.Melee, state.playerMelee, scorchRowCards);
+        EvaluateScorchRow(CardDefs.Range.Agile, state.playerMelee, scorchRowCards);
+        EvaluateScorchRow(CardDefs.Range.Agile, state.playerRanged, scorchRowCards);
         EvaluateScorchRow(CardDefs.Range.Ranged, state.playerRanged, scorchRowCards);
         EvaluateScorchRow(CardDefs.Range.Siege, state.playerSiege, scorchRowCards);
     }
@@ -628,6 +631,10 @@ public class AIOpponent
         if (highestStrength == 0)
             return;
 
+        // Agile scorch can target either melee or ranged
+        if (scorchCard.defaultRange == CardDefs.Range.Agile)
+            scorchCard.range = playerRow == state.playerMelee ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
+
         // Count how many cards would be destroyed on the player side
         int cardsToDestroy = playerRow.Count(card => card.strength == highestStrength && card.type == CardDefs.Type.Standard);
 
@@ -654,10 +661,10 @@ public class AIOpponent
         Debug.Log("[AIOpponent] Evaluating Horn options...");
 
         // Get horn cards by range
-        CardData meleeHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Melee).ToList());
-        CardData agileHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Agile).ToList());
-        CardData rangedHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Ranged).ToList());
-        CardData siegeHornCard = GetRandomCard(hornCards.Where(c => c.range == CardDefs.Range.Siege).ToList());
+        CardData meleeHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Melee).ToList());
+        CardData agileHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Agile).ToList());
+        CardData rangedHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Ranged).ToList());
+        CardData siegeHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Siege).ToList());
         CardData specialHornCard = GetRandomCard(hornCards.Where(c => c.type == CardDefs.Type.Special).ToList());
 
         // Check if horn is already active on rows
@@ -697,10 +704,12 @@ public class AIOpponent
         {
             if (!isHornActiveOnMelee && shouldHornMeleeRow && !shouldMardroemeMeleeFirst && meleeHornCard == null && npcStandardMeleeStrength >= npcStandardRangedStrength)
             {
+                agileHornCard.range = CardDefs.Range.Melee;
                 cardOptions.Add(new CardOption(agileHornCard, npcStandardMeleeStrength, "Horn to increase melee row strength"));
             }
             else if (!isHornActiveOnRanged && shouldHornRangedRow && !shouldMardroemeRangedFirst)
             {
+                agileHornCard.range = CardDefs.Range.Ranged;
                 cardOptions.Add(new CardOption(agileHornCard, npcStandardRangedStrength, "Horn to increase ranged row strength"));
             }
         }
@@ -743,10 +752,10 @@ public class AIOpponent
         Debug.Log("[AIOpponent] Evaluating Mardroeme options...");
 
         // Get mardroeme cards by range
-        CardData meleeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Melee).ToList());
-        CardData agileMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Agile).ToList());
-        CardData rangedMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Ranged).ToList());
-        CardData siegeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.range == CardDefs.Range.Siege).ToList());
+        CardData meleeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Melee).ToList());
+        CardData agileMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Agile).ToList());
+        CardData rangedMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Ranged).ToList());
+        CardData siegeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Siege).ToList());
         CardData specialMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.type == CardDefs.Type.Special).ToList());
 
         // Check if mardroeme is already active on rows
@@ -784,10 +793,12 @@ public class AIOpponent
         {
             if (!isMardroemeActiveOnMelee && shouldMardroemeMeleeRow && !hasHornSpecialCard && meleeMardroemeCard == null)
             {
+                agileMardroemeCard.range = CardDefs.Range.Melee;
                 cardOptions.Add(new CardOption(agileMardroemeCard, score, "Mardroeme to transform morph cards on melee row"));
             }
             else if (!isMardroemeActiveOnRanged && shouldMardroemeRangedRow && !hasHornSpecialCard)
             {
+                agileMardroemeCard.range = CardDefs.Range.Ranged;
                 cardOptions.Add(new CardOption(agileMardroemeCard, score, "Mardroeme to transform morph cards on ranged row"));
             }
         }
@@ -806,6 +817,56 @@ public class AIOpponent
             else if (!isMardroemeActiveOnSiege && shouldMardroemeSiegeRow && isSiegeSpecialEmpty)
             {
                 cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on siege row", null, RowZone.OpponentSiegeSpecial));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Assign a range to each agile card.
+    /// </summary>
+    private void ChooseAgile()
+    {
+        foreach (var card in npcHand)
+        {
+            if (card.defaultRange == CardDefs.Range.Agile)
+            {
+                if (card.ability == CardDefs.Ability.Horn || card.ability == CardDefs.Ability.Mardroeme ||
+                    card.ability == CardDefs.Ability.ScorchRow)
+                {
+                    continue; // These are handled in their ability functions
+                }
+
+                int meleeScore = 0;
+                int rangedScore = 0;
+
+                // Strongest row preference (to be horned or moraled?)
+                meleeScore += npcStandardMeleeStrength;
+                rangedScore += npcStandardRangedStrength;
+
+                // Check for targets (bonds)
+                if (card.target != null)
+                {
+                    foreach (var target in card.target)
+                    {
+                        // Player and opponent cards (-1000)
+                        var matchingTargets = npcCardsOnBoard.Where(c => c.id == target.id || c.id - 1000 == target.id).ToList();
+                        if (matchingTargets.Count > 0)
+                        {
+                            int existingTargets = matchingTargets.Count;
+
+                            if (matchingTargets[0].range == CardDefs.Range.Melee) meleeScore += existingTargets * 20;
+                            if (matchingTargets[0].range == CardDefs.Range.Ranged) rangedScore += existingTargets * 20;
+                            break;
+                        }
+                    }
+                }
+
+                // Avoid weather
+                if (IsWeatherActiveOnRow(CardDefs.Range.Melee)) meleeScore -= 50;
+                if (IsWeatherActiveOnRow(CardDefs.Range.Ranged)) rangedScore -= 50;
+
+                // Assign range based on score
+                card.range = (meleeScore >= rangedScore) ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
             }
         }
     }
