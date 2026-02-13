@@ -67,6 +67,7 @@ public class AIOpponent
         ReadBoard();
 
         // Check ability options
+        ChooseAgile();
         ChooseClearWeatherAbiltiy();
         ChooseWeatherAbility();
         ChooseDecoy();
@@ -78,7 +79,7 @@ public class AIOpponent
         ChooseScorchRow();
         ChooseHorn();
         ChooseMardroeme();
-        ChooseAgile();
+        ChooseMorph();
 
         // Now choose the best card to play
         GetBestCardOption();
@@ -234,6 +235,56 @@ public class AIOpponent
     // -------------------------
     // Ability Choice Functions
     // -------------------------
+
+    /// <summary>
+    /// Assign a range to each agile card.
+    /// </summary>
+    private void ChooseAgile()
+    {
+        foreach (var card in npcHand)
+        {
+            if (card.defaultRange == CardDefs.Range.Agile)
+            {
+                if (card.ability == CardDefs.Ability.Horn || card.ability == CardDefs.Ability.Mardroeme ||
+                    card.ability == CardDefs.Ability.Morph || card.ability == CardDefs.Ability.ScorchRow)
+                {
+                    continue; // These are handled in their ability functions
+                }
+
+                int meleeScore = 0;
+                int rangedScore = 0;
+
+                // Strongest row preference (to be horned or moraled?)
+                meleeScore += npcStandardMeleeStrength;
+                rangedScore += npcStandardRangedStrength;
+
+                // Check for targets (bonds)
+                if (card.target != null)
+                {
+                    foreach (var target in card.target)
+                    {
+                        // Player and opponent cards (-1000)
+                        var matchingTargets = npcCardsOnBoard.Where(c => c.id == target.id || c.id - 1000 == target.id).ToList();
+                        if (matchingTargets.Count > 0)
+                        {
+                            int existingTargets = matchingTargets.Count;
+
+                            if (matchingTargets[0].range == CardDefs.Range.Melee) meleeScore += existingTargets * 20;
+                            if (matchingTargets[0].range == CardDefs.Range.Ranged) rangedScore += existingTargets * 20;
+                            break;
+                        }
+                    }
+                }
+
+                // Avoid weather
+                if (IsWeatherActiveOnRow(CardDefs.Range.Melee)) meleeScore -= 50;
+                if (IsWeatherActiveOnRow(CardDefs.Range.Ranged)) rangedScore -= 50;
+
+                // Assign range based on score
+                card.range = (meleeScore >= rangedScore) ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
+            }
+        }
+    }
 
     /// <summary>
     /// Check if a Clear Weather card should be played.
@@ -685,9 +736,9 @@ public class AIOpponent
 
         // Want to avoid a horn unit card from blocking a special mardroeme card (if we have morph cards)
         bool hasMardroemeSpecialCard = HasTypeWithAbility(npcHand, CardDefs.Type.Special, CardDefs.Ability.Mardroeme);
-        bool shouldMardroemeMeleeFirst = hasMardroemeSpecialCard && state.opponentMelee.Any(c => c.ability == CardDefs.Ability.Morph);
-        bool shouldMardroemeRangedFirst = hasMardroemeSpecialCard && state.opponentRanged.Any(c => c.ability == CardDefs.Ability.Morph);
-        bool shouldMardroemeSiegeFirst = hasMardroemeSpecialCard && state.opponentSiege.Any(c => c.ability == CardDefs.Ability.Morph);
+        bool shouldMardroemeMeleeFirst = hasMardroemeSpecialCard && IsAbilityOnRow(state.opponentMelee, CardDefs.Ability.Morph);
+        bool shouldMardroemeRangedFirst = hasMardroemeSpecialCard && IsAbilityOnRow(state.opponentRanged, CardDefs.Ability.Morph);
+        bool shouldMardroemeSiegeFirst = hasMardroemeSpecialCard && IsAbilityOnRow(state.opponentSiege, CardDefs.Ability.Morph);
 
         // Evaluate horn options
         if (meleeHornCard != null && !isHornActiveOnMelee && shouldHornMeleeRow && !shouldMardroemeMeleeFirst)
@@ -759,9 +810,9 @@ public class AIOpponent
         CardData specialMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.type == CardDefs.Type.Special).ToList());
 
         // Check if mardroeme is already active on rows
-        bool isMardroemeActiveOnMelee = state.opponentMeleeSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
-        bool isMardroemeActiveOnRanged = state.opponentRangedSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
-        bool isMardroemeActiveOnSiege = state.opponentSiegeSpecial.Any(c => c.ability == CardDefs.Ability.Mardroeme);
+        bool isMardroemeActiveOnMelee = IsAbilityOnRow(state.opponentMeleeSpecial, CardDefs.Ability.Mardroeme);
+        bool isMardroemeActiveOnRanged = IsAbilityOnRow(state.opponentRangedSpecial, CardDefs.Ability.Mardroeme);
+        bool isMardroemeActiveOnSiege = IsAbilityOnRow(state.opponentSiegeSpecial, CardDefs.Ability.Mardroeme);
 
         // Check if special rows are empty so we can play a special mardroeme card
         bool isMeleeSpecialEmpty = state.opponentMeleeSpecial.Count == 0;
@@ -769,9 +820,9 @@ public class AIOpponent
         bool isSiegeSpecialEmpty = state.opponentSiegeSpecial.Count == 0;
 
         // Check if a morph card is on a row to be transformed
-        bool shouldMardroemeMeleeRow = state.opponentMelee.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
-        bool shouldMardroemeRangedRow = state.opponentRanged.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
-        bool shouldMardroemeSiegeRow = state.opponentSiege.Any(c => c.ability == CardDefs.Ability.Morph) || npcHand.Count < 5;
+        bool shouldMardroemeMeleeRow = IsAbilityOnRow(state.opponentMelee, CardDefs.Ability.Morph) || npcHand.Count < 5;
+        bool shouldMardroemeRangedRow = IsAbilityOnRow(state.opponentRanged, CardDefs.Ability.Morph) || npcHand.Count < 5;
+        bool shouldMardroemeSiegeRow = IsAbilityOnRow(state.opponentSiege, CardDefs.Ability.Morph) || npcHand.Count < 5;
 
         // Want to avoid a mardroeme unit card from blocking a special horn card
         bool hasHornSpecialCard = HasTypeWithAbility(npcHand, CardDefs.Type.Special, CardDefs.Ability.Horn);
@@ -822,52 +873,74 @@ public class AIOpponent
     }
 
     /// <summary>
-    /// Assign a range to each agile card.
+    /// Check if a Morph card should be played.
     /// </summary>
-    private void ChooseAgile()
+    private void ChooseMorph()
     {
-        foreach (var card in npcHand)
+        List<CardData> morphCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Morph);
+
+        // Check if we have a morph card to play
+        if (morphCards == null || morphCards.Count == 0)
+            return;
+
+        Debug.Log("[AIOpponent] Evaluating Morph options...");
+
+        // Check if we have mardroeme cards to transform the morph cards
+        bool canTransformMelee = HasMardroemeToTransformRow(CardDefs.Range.Melee);
+        bool canTransformRanged = HasMardroemeToTransformRow(CardDefs.Range.Ranged);
+        bool canTransformSiege = HasMardroemeToTransformRow(CardDefs.Range.Siege);
+
+        bool isMardroemeOnMelee = IsAbilityOnRow(state.opponentMelee, CardDefs.Ability.Mardroeme) || IsAbilityOnRow(state.opponentMeleeSpecial, CardDefs.Ability.Mardroeme);
+        bool isMardroemeOnRanged = IsAbilityOnRow(state.opponentRanged, CardDefs.Ability.Mardroeme) || IsAbilityOnRow(state.opponentRangedSpecial, CardDefs.Ability.Mardroeme);
+        bool isMardroemeOnSiege = IsAbilityOnRow(state.opponentSiege, CardDefs.Ability.Mardroeme) || IsAbilityOnRow(state.opponentSiegeSpecial, CardDefs.Ability.Mardroeme);
+
+        foreach (var card in morphCards)
         {
-            if (card.defaultRange == CardDefs.Range.Agile)
+            int score = 0;
+
+            // Search the summon deck for target ID (with 1000 offset) and check what ability it will have
+            if (card.target != null && card.target.Count > 0)
             {
-                if (card.ability == CardDefs.Ability.Horn || card.ability == CardDefs.Ability.Mardroeme ||
-                    card.ability == CardDefs.Ability.ScorchRow)
+                CardData cardTarget = state.opponentSummonDeck.FirstOrDefault(c => c.id == card.target[0].id || c.id - 1000 == card.target[0].id);
+                if (cardTarget != null &&
+                    ((card.defaultRange == CardDefs.Range.Melee && canTransformMelee) ||
+                    (card.defaultRange == CardDefs.Range.Ranged && canTransformRanged) ||
+                    (card.defaultRange == CardDefs.Range.Siege && canTransformSiege)))
                 {
-                    continue; // These are handled in their ability functions
-                }
-
-                int meleeScore = 0;
-                int rangedScore = 0;
-
-                // Strongest row preference (to be horned or moraled?)
-                meleeScore += npcStandardMeleeStrength;
-                rangedScore += npcStandardRangedStrength;
-
-                // Check for targets (bonds)
-                if (card.target != null)
-                {
-                    foreach (var target in card.target)
+                    switch (cardTarget.ability)
                     {
-                        // Player and opponent cards (-1000)
-                        var matchingTargets = npcCardsOnBoard.Where(c => c.id == target.id || c.id - 1000 == target.id).ToList();
-                        if (matchingTargets.Count > 0)
-                        {
-                            int existingTargets = matchingTargets.Count;
-
-                            if (matchingTargets[0].range == CardDefs.Range.Melee) meleeScore += existingTargets * 20;
-                            if (matchingTargets[0].range == CardDefs.Range.Ranged) rangedScore += existingTargets * 20;
-                            break;
-                        }
+                        case CardDefs.Ability.Horn:         score += 40; break;
+                        case CardDefs.Ability.Spy:          score += 60; break;
+                        case CardDefs.Ability.ScorchRow:    score += 30; break;
+                        case CardDefs.Ability.MusterPlus:   score += 30; break;
+                        case CardDefs.Ability.Bond:         score += 20; break;
+                        default:                            break;
                     }
                 }
-
-                // Avoid weather
-                if (IsWeatherActiveOnRow(CardDefs.Range.Melee)) meleeScore -= 50;
-                if (IsWeatherActiveOnRow(CardDefs.Range.Ranged)) rangedScore -= 50;
-
-                // Assign range based on score
-                card.range = (meleeScore >= rangedScore) ? CardDefs.Range.Melee : CardDefs.Range.Ranged;
             }
+
+            if ((isMardroemeOnMelee || canTransformMelee) && (card.defaultRange == CardDefs.Range.Melee || card.defaultRange == CardDefs.Range.Agile))
+            {
+                card.range = CardDefs.Range.Melee;
+                score += 10;
+            }
+            else if ((isMardroemeOnRanged || canTransformRanged) && (card.defaultRange == CardDefs.Range.Ranged || card.defaultRange == CardDefs.Range.Agile))
+            {
+                card.range = CardDefs.Range.Ranged;
+                score += 10;
+            }
+            else if ((isMardroemeOnSiege || canTransformSiege) && card.defaultRange == CardDefs.Range.Siege)
+            {
+                card.range = CardDefs.Range.Siege;
+                score += 10;
+            }
+
+            // Avoid overplaying morph cards early
+            if (npcCardsOnBoard.Count < 3) score -= 30;
+            if (npcHand.Count > 7) score -= 20;
+
+            if (score > 0)
+                cardOptions.Add(new CardOption(card, score, "Morph to transform under Mardroeme"));
         }
     }
 
@@ -960,6 +1033,34 @@ public class AIOpponent
     private bool HasTypeWithAbility(List<CardData> zone, string type, string ability)
     {
         return zone.Any(card => card.type == type && card.ability == ability);
+    }
+
+    /// <summary>
+    /// Check if there are Mardroeme cards in hand that can transform morph cards on the specified row.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private bool HasMardroemeToTransformRow(string row)
+    {
+        List<CardData> mardroemeCards = GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme);
+
+        bool hasSpecial = mardroemeCards.Any(c => c.type == CardDefs.Type.Special);
+        bool hasRowSpecific = mardroemeCards.Any(c => c.defaultRange == row);
+        bool hasAgile = mardroemeCards.Any(c => c.defaultRange == CardDefs.Range.Agile) &&
+                        (row == CardDefs.Range.Melee || row == CardDefs.Range.Ranged);
+
+        return hasSpecial || hasRowSpecific || hasAgile;
+    }
+
+    /// <summary>
+    /// Check if a specific ability is active on the specified row.
+    /// </summary>
+    /// <param name="zone"></param>
+    /// <param name="ability"></param>
+    /// <returns></returns>
+    private bool IsAbilityOnRow(List<CardData> zone, string ability)
+    {
+        return zone.Any(card => card.ability == ability);
     }
 
     /// <summary>
