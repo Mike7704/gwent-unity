@@ -45,9 +45,9 @@ public class BoardManager : Singleton<BoardManager>
     private readonly Dictionary<CardData, CardUI> cardUIMap = new();
 
     // Game settings
-    private int initialHandSize = 10;
-    private bool randomisePlayerDeck = false;
-    private int randomiseDeckSize = 25;
+    public int initialHandSize = 10;
+    public bool randomisePlayerDeck = false;
+    public int randomiseDeckSize = 25;
     public int spyDrawAmount = 2;
     public bool leaderCardsEnabled = true;
     public bool factionAbilityEnabled = true;

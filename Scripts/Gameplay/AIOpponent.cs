@@ -85,9 +85,8 @@ public class AIOpponent
         GetBestCardOption();
 
         // Pass if winning, no good cards, or no cards to play
-        if (ShouldPass() || cardToPlay == null)
+        if (ShouldPass())
         {
-            Debug.Log("[AIOpponent] Passing turn...");
             boardManager.PassRound(isPlayer: false);
             yield break;
         }
@@ -209,8 +208,8 @@ public class AIOpponent
         npcStandardRangedStrength = state.opponentRanged.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
         npcStandardSiegeStrength = state.opponentSiege.Where(c => c.type == CardDefs.Type.Standard).Sum(c => c.strength);
 
-    // Faction ability check (Nilfgaard)
-    canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
+        // Faction ability check (Nilfgaard)
+        canWinDraws = boardManager.playerFaction != CardDefs.Faction.Nilfgaard && boardManager.opponentFaction == CardDefs.Faction.Nilfgaard;
     }
 
     /// <summary>
@@ -221,13 +220,119 @@ public class AIOpponent
     {
         Debug.Log("[AIOpponent] Evaluating pass options...");
 
-        // No cards left to play
-        if (npcHand.Count == 0)
-            return true;
+        int playerLife = state.PlayerLife;
+        int npcLife = state.OpponentLife;
 
-        // Player has passed and we are winning
-        if (state.PlayerHasPassed && (totalNPCScore > totalPlayerScore || (totalNPCScore == totalPlayerScore && canWinDraws)))
+        int scoreDiff = totalNPCScore - totalPlayerScore;
+        int cardDiff = npcHand.Count - state.playerHand.Count;
+
+        bool hasSpareLife = npcLife == 2;
+        bool playerPassed = state.PlayerHasPassed;
+        bool playerOutOfCards = state.playerHand.Count == 0 && state.playerLeader.Count == 0;
+
+        int npcPotential = npcHand.Sum(c => c.strength);
+        int playerPotential = state.playerHand.Sum(c => c.strength);
+
+        const int SMALL_LEAD = 6;
+        const int MEDIUM_LEAD = 12;
+        const int LARGE_LEAD = 25;
+        const int HUGE_LEAD = 40;
+
+        // No cards left
+        if (npcHand.Count == 0)
+        {
+            Debug.Log("[AIOpponent] Passing - No cards remaining");
             return true;
+        }
+
+        // No good cards to play
+        if (cardToPlay == null)
+        {
+            Debug.Log("[AIOpponent] Passing - No usable cards");
+            return true;
+        }
+
+        // Player passed and we win 
+        if (playerPassed && (scoreDiff > 0 || (scoreDiff == 0 && canWinDraws)))
+        {
+            Debug.Log("[AIOpponent] Passing - Winning and player has passed");
+            return true;
+        }
+
+        // Huge lead, hopefully the player will also pass
+        if (scoreDiff > HUGE_LEAD && npcPotential < playerPotential && Chance(2, 3))
+        {
+            Debug.Log("[AIOpponent] Passing - Huge score lead");
+            return true;
+        }
+
+        // We have a spare life
+        if (hasSpareLife)
+        {
+            // Save cards when low
+            if (npcHand.Count < 3 && scoreDiff <= 0 && Chance(1, 2))
+            {
+                Debug.Log("[AIOpponent] Passing - Very low on cards");
+                return true;
+            }
+
+            // Winning but low on cards
+            if (npcHand.Count < 5 && scoreDiff > 0 && Chance(1, 3))
+            {
+                Debug.Log("[AIOpponent] Passing - Winning but low on cards");
+                return true;
+            }
+
+            // Player winning and has more cards
+            if (scoreDiff < -SMALL_LEAD && cardDiff < 0 && Chance(2, 3))
+            {
+                Debug.Log("[AIOpponent] Passing - Player winning and has more cards");
+                return true;
+            }
+
+            // Player has a large lead
+            if (scoreDiff < -LARGE_LEAD && cardDiff < 0 && Chance(2, 3))
+            {
+                Debug.Log("[AIOpponent] Passing - Player winning by a lot so preserve cards");
+                return true;
+            }
+
+            // Weather pressure and no clear
+            if (scoreDiff < -MEDIUM_LEAD && state.weatherCards.Count > 1 && !IsAbilityOnRow(npcHand, CardDefs.Ability.Clear) &&
+                npcHand.Count < 5 && Chance(1, 2))
+            {
+                Debug.Log("[AIOpponent] Passing - Weather pressure");
+                return true;
+            }
+
+            // Winning and player low on cards
+            if (scoreDiff > SMALL_LEAD && state.playerHand.Count < 3 && Chance(2, 3))
+            {
+                Debug.Log("[AIOpponent] Passing - Winning and player low on cards");
+                return true;
+            }
+
+            // Winning but less card
+            if (scoreDiff > 0 && cardDiff < -2 && Chance(2, 3))
+            {
+                Debug.Log("[AIOpponent] Passing - Winning but less card");
+                return true;
+            }
+
+            // Medium lead so save cards
+            if (scoreDiff > MEDIUM_LEAD && cardDiff >= 0 && Chance(1, 2))
+            {
+                Debug.Log("[AIOpponent] Passing - Medium score lead so save cards");
+                return true;
+            }
+        }
+
+        // Player out of cards and we are winning
+        if (playerOutOfCards && scoreDiff > 0)
+        {
+            Debug.Log("[AIOpponent] Passing - Winning and the player has no cards remaining");
+            return true;
+        }
 
         return false;
     }
@@ -1112,6 +1217,17 @@ public class AIOpponent
             strength += card.strength * 2;
         }
         return strength;
+    }
+
+    /// <summary>
+    /// Returns true if a random chance check passes based on the given numerator and denominator.
+    /// </summary>
+    /// <param name="numerator"></param>
+    /// <param name="denominator"></param>
+    /// <returns></returns>
+    private bool Chance(int numerator, int denominator)
+    {
+        return RandomUtils.GetRandom(0, denominator) < numerator;
     }
 }
 
