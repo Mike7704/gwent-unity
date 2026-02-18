@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
 
@@ -107,6 +109,7 @@ public class AIOpponent
     /// </summary>
     private void GetBestCardOption()
     {
+        // Check if we have any card options based on abilities
         if (cardOptions.Count > 0)
         {
             // Get the highest scoring card option
@@ -129,38 +132,123 @@ public class AIOpponent
 
             Debug.Log($"[AIOpponent] Selected [{cardToPlay.name}] | Score {chosenCard.score} | {chosenCard.reason}");
         }
-        else
+        else // No strong ability options, so try to play the best card from hand
         {
-            // Play a random card if no options available
-            List<CardData> randomOptions = new List<CardData>();
-            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Bond));
-            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morale));
-            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Muster));
-            randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.MusterPlus));
-            randomOptions.AddRange(GetCardsWithoutAbility(npcHand));
+            // Check the remaining cards available
+            List<CardData> remainingOptions = new List<CardData>();
+            remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Bond));
+            remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morale));
+            remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Muster));
+            remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.MusterPlus));
+            remainingOptions.AddRange(GetCardsWithoutAbility(npcHand));
 
-            if (randomOptions.Count == 0)
+            if (remainingOptions.Count == 0)
             {
                 // Lets try more options
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morph));
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme));
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Horn));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morph));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Horn));
             }
 
-            if (randomOptions.Count == 0)
+            if (remainingOptions.Count == 0)
             {
                 // We must really be out of options
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.ScorchRow));
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Avenger));
-                randomOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Medic));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.ScorchRow));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Avenger));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Medic));
             }
 
-            if (randomOptions.Count > 0)
+            // Select a card to play
+            if (remainingOptions.Count > 0)
             {
-                cardToPlay = GetRandomCard(randomOptions);
+                // Sort cards by ascending strength to try to play the weakest card possible
+                remainingOptions = remainingOptions.OrderBy(c => c.strength).ToList();
+
+                // If the player has passed, try to play the least amount of cards to win the round
+                if (state.PlayerHasPassed)
+                {
+                    foreach (var card in remainingOptions)
+                    {
+                        if (CanBeatPlayerScore(card))
+                        {
+                            cardToPlay = card;
+                            Debug.Log($"[AIOpponent] Selected optimal card: [{cardToPlay.name}]");
+                            return;
+                        }
+                    }
+                }
+
+                // Try to avoid weather
+                if (state.weatherCards.Count > 0)
+                {
+                    // Check active weather
+                    bool isFrostActive = IsWeatherActiveOnRow(CardDefs.Range.Melee);
+                    bool isFogActive = IsWeatherActiveOnRow(CardDefs.Range.Ranged);
+                    bool isRainActive = IsWeatherActiveOnRow(CardDefs.Range.Siege);
+
+                    foreach (var card in remainingOptions)
+                    {
+                        if (card.type == CardDefs.Type.Hero || card.strength < 3 ||
+                           (card.range == CardDefs.Range.Melee && !isFrostActive) ||
+                           (card.range == CardDefs.Range.Ranged && !isFogActive) ||
+                           (card.range == CardDefs.Range.Siege && !isRainActive))
+                        {
+                            cardToPlay = card;
+                            Debug.Log($"[AIOpponent] Selected avoid weather card: [{cardToPlay.name}]");
+                            return;
+                        }
+                    }
+                }
+
+                // Play a random card if no options available
+                cardToPlay = GetRandomCard(remainingOptions);
                 Debug.Log($"[AIOpponent] Selected random card: [{cardToPlay.name}]");
             }
         }
+    }
+
+    /// <summary>
+    /// Check if the card can beat the player's score to win the round.
+    /// </summary>
+    /// <param name="card"></param>
+    /// <returns></returns>
+    private bool CanBeatPlayerScore(CardData card)
+    {
+        int scoreNeededToWin = (totalPlayerScore + (canWinDraws ? 0 : 1)) - totalNPCScore;
+        int cardStrength = card.strength;
+        string cardRange = card.range;
+        bool isCardTypeStandard = card.type == CardDefs.Type.Standard;
+        bool isCardTypeHero = card.type == CardDefs.Type.Hero;
+
+        // Check for morale or horn on the same row that boosts the card strength
+        bool isMoraleOnRow = false;
+        bool isHornOnRow = false;
+
+        switch (cardRange)
+        {
+            case CardDefs.Range.Melee:
+                isMoraleOnRow = IsAbilityOnRow(state.opponentMelee, CardDefs.Ability.Morale);
+                isHornOnRow = IsAbilityOnRow(state.opponentMelee, CardDefs.Ability.Horn) || IsAbilityOnRow(state.opponentMeleeSpecial, CardDefs.Ability.Horn);
+                break;
+            case CardDefs.Range.Ranged:
+                isMoraleOnRow = IsAbilityOnRow(state.opponentRanged, CardDefs.Ability.Morale);
+                isHornOnRow = IsAbilityOnRow(state.opponentRanged, CardDefs.Ability.Horn) || IsAbilityOnRow(state.opponentRangedSpecial, CardDefs.Ability.Horn);
+                break;
+            case CardDefs.Range.Siege:
+                isMoraleOnRow = IsAbilityOnRow(state.opponentSiege, CardDefs.Ability.Morale);
+                isHornOnRow = IsAbilityOnRow(state.opponentSiege, CardDefs.Ability.Horn) || IsAbilityOnRow(state.opponentSiegeSpecial, CardDefs.Ability.Horn);
+                break;
+        }
+
+        // Check if the card can win the round if played
+        if (((isCardTypeHero || cardStrength < 2 || !IsWeatherActiveOnRow(cardRange)) && (cardStrength >= scoreNeededToWin)) ||
+            (isCardTypeStandard && isMoraleOnRow && (cardStrength + 1 > scoreNeededToWin)) ||
+            (isCardTypeStandard && isHornOnRow && (cardStrength * 2 > scoreNeededToWin)))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
