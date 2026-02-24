@@ -146,8 +146,8 @@ public class AIOpponent
             {
                 // Lets try more options
                 remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Morph));
-                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme));
-                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Horn));
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Mardroeme).Where(c => c.type != CardDefs.Type.Special && c.type != CardDefs.Type.Leader).ToList());
+                remainingOptions.AddRange(GetCardsWithAbility(npcHand, CardDefs.Ability.Horn).Where(c => c.type != CardDefs.Type.Special && c.type != CardDefs.Type.Leader).ToList());
             }
 
             if (remainingOptions.Count == 0)
@@ -345,6 +345,12 @@ public class AIOpponent
         {
             Debug.Log("[AIOpponent] Passing - Winning and player has passed");
             return true;
+        }
+
+        // Player winning but the selected card can win the round, so play it.
+        if (scoreDiff < -SMALL_LEAD && cardToPlay != null && CanBeatPlayerScore(cardToPlay))
+        {
+            return false;
         }
 
         // Huge lead, hopefully the player will also pass
@@ -909,7 +915,7 @@ public class AIOpponent
         CardData agileHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Agile).ToList());
         CardData rangedHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Ranged).ToList());
         CardData siegeHornCard = GetRandomCard(hornCards.Where(c => c.defaultRange == CardDefs.Range.Siege).ToList());
-        CardData specialHornCard = GetRandomCard(hornCards.Where(c => c.type == CardDefs.Type.Special).ToList());
+        CardData specialHornCard = GetRandomCard(hornCards.Where(c => c.type == CardDefs.Type.Special || c.type == CardDefs.Type.Leader).ToList());
 
         // Check if horn is already active on rows
         bool isHornActiveOnMelee = state.opponentMeleeSpecial.Any(c => c.ability == CardDefs.Ability.Horn);
@@ -961,19 +967,19 @@ public class AIOpponent
         // Need to decide which row to add the special horn card
         if (specialHornCard != null)
         {
-            if (!isHornActiveOnMelee && shouldHornMeleeRow && isMeleeSpecialEmpty &&
+            if (!isHornActiveOnMelee && (shouldHornMeleeRow || npcHand.Count < 5) && isMeleeSpecialEmpty &&
                 (npcStandardMeleeStrength >= npcStandardRangedStrength || !isRangedSpecialEmpty) &&
                 (npcStandardMeleeStrength >= npcStandardSiegeStrength || !isSiegeSpecialEmpty))
             {
                 cardOptions.Add(new CardOption(specialHornCard, npcStandardMeleeStrength - 1, "Horn to increase melee row strength", null, RowZone.OpponentMeleeSpecial));
             }
-            else if (!isHornActiveOnRanged && shouldHornRangedRow && isRangedSpecialEmpty &&
+            else if (!isHornActiveOnRanged && (shouldHornRangedRow || npcHand.Count < 5) && isRangedSpecialEmpty &&
                 (npcStandardRangedStrength >= npcStandardMeleeStrength || !isMeleeSpecialEmpty) &&
                 (npcStandardRangedStrength >= npcStandardSiegeStrength || !isSiegeSpecialEmpty))
             {
                 cardOptions.Add(new CardOption(specialHornCard, npcStandardRangedStrength - 1, "Horn to increase ranged row strength", null, RowZone.OpponentRangedSpecial));
             }
-            else if (!isHornActiveOnSiege && shouldHornSiegeRow && isSiegeSpecialEmpty &&
+            else if (!isHornActiveOnSiege && (shouldHornSiegeRow || npcHand.Count < 5) && isSiegeSpecialEmpty &&
                 (npcStandardSiegeStrength >= npcStandardMeleeStrength || !isMeleeSpecialEmpty) &&
                 (npcStandardSiegeStrength >= npcStandardRangedStrength || !isRangedSpecialEmpty))
             {
@@ -1000,7 +1006,7 @@ public class AIOpponent
         CardData agileMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Agile).ToList());
         CardData rangedMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Ranged).ToList());
         CardData siegeMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.defaultRange == CardDefs.Range.Siege).ToList());
-        CardData specialMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.type == CardDefs.Type.Special).ToList());
+        CardData specialMardroemeCard = GetRandomCard(mardroemeCards.Where(c => c.type == CardDefs.Type.Special || c.type == CardDefs.Type.Leader).ToList());
 
         // Check if mardroeme is already active on rows
         bool isMardroemeActiveOnMelee = IsAbilityOnRow(state.opponentMeleeSpecial, CardDefs.Ability.Mardroeme);
@@ -1050,15 +1056,15 @@ public class AIOpponent
         // Need to decide which row to add the special mardroeme card
         if (specialMardroemeCard != null)
         {
-            if (!isMardroemeActiveOnMelee && shouldMardroemeMeleeRow && isMeleeSpecialEmpty)
+            if (!isMardroemeActiveOnMelee && (shouldMardroemeMeleeRow || npcHand.Count < 5) && isMeleeSpecialEmpty)
             {
                 cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on melee row", null, RowZone.OpponentMeleeSpecial));
             }
-            else if (!isMardroemeActiveOnRanged && shouldMardroemeRangedRow && isRangedSpecialEmpty)
+            else if (!isMardroemeActiveOnRanged && (shouldMardroemeRangedRow || npcHand.Count < 5) && isRangedSpecialEmpty)
             {
                 cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on ranged row", null, RowZone.OpponentRangedSpecial));
             }
-            else if (!isMardroemeActiveOnSiege && shouldMardroemeSiegeRow && isSiegeSpecialEmpty)
+            else if (!isMardroemeActiveOnSiege && (shouldMardroemeSiegeRow || npcHand.Count < 5) && isSiegeSpecialEmpty)
             {
                 cardOptions.Add(new CardOption(specialMardroemeCard, score - 1, "Mardroeme to transform morph cards on siege row", null, RowZone.OpponentSiegeSpecial));
             }
@@ -1173,6 +1179,9 @@ public class AIOpponent
         else
             cardsWithAbility = GetCardsWithAbility(npcCardsOnBoard, ability);
 
+        if (cardsWithAbility == null || cardsWithAbility.Count == 0)
+            return null;
+
         int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
         return cardsWithAbility[index];
     }
@@ -1192,6 +1201,9 @@ public class AIOpponent
             return npcGraveyard.OrderByDescending(c => c.strength).FirstOrDefault();
 
         List<CardData> cardsWithAbility = GetCardsWithAbility(npcGraveyard, ability);
+
+        if (cardsWithAbility == null || cardsWithAbility.Count == 0)
+            return null;
 
         int index = RandomUtils.GetRandom(0, cardsWithAbility.Count - 1);
         return cardsWithAbility[index];
