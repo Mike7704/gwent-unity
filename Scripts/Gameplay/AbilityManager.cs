@@ -260,6 +260,7 @@ public class AbilityManager
         {
             // If the agile card was recovered by a medic, resolve it and end medic mode
             isMedicActive = false;
+            boardManager.HideGraveyardContainers();
             boardManager.StartCoroutine(ResolveCard(activeAgileCard, isPlayer));
         }
         else
@@ -417,9 +418,9 @@ public class AbilityManager
         // Enter decoy targeting mode
         isDecoyActive = true;
         activeDecoyCard = card;
-        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerMeleeRow, IsStandardCardOnRow(state.playerMelee));
-        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerRangedRow, IsStandardCardOnRow(state.playerRanged));
-        boardManager.boardUI.ShowRowHightlight(RowZone.PlayerSiegeRow, IsStandardCardOnRow(state.playerSiege));
+        boardManager.boardUI.ShowRowHighlight(RowZone.PlayerMeleeRow, IsStandardCardOnRow(state.playerMelee));
+        boardManager.boardUI.ShowRowHighlight(RowZone.PlayerRangedRow, IsStandardCardOnRow(state.playerRanged));
+        boardManager.boardUI.ShowRowHighlight(RowZone.PlayerSiegeRow, IsStandardCardOnRow(state.playerSiege));
 
         Debug.Log("[AbilityManager] Waiting for card to decoy...");
     }
@@ -596,6 +597,12 @@ public class AbilityManager
         // Enter medic mode
         isMedicActive = true;
 
+        if (isPlayer)
+        {
+            // Show graveyard container for player to select a card to recover
+            boardManager.DisplayGraveyardContainer(isPlayer);
+        }
+
         // Wait until player selects a card from the graveyard (and any agile row selection)
         yield return new WaitUntil(() => !isMedicActive && !isAgileActive);
 
@@ -630,7 +637,10 @@ public class AbilityManager
 
             // Exit medic mode if not recovered a medic card
             if (card.ability != CardDefs.Ability.Medic)
+            {
                 isMedicActive = false;
+                boardManager.HideGraveyardContainers();
+            }
         }
     }
 
@@ -1366,6 +1376,10 @@ public class AbilityManager
         bool shouldSummonHorn = isHornUnitOnRow && !isSpecialCardActive;
         bool shouldSummonMardroeme = isMardroemeUnitOnRow && !isSpecialCardActive;
 
+        // Use negative IDs for special cards that have been summoned
+        int hornSpecialCardId = -1;
+        int mardroemeSpecialCardId = -2;
+
         // Handle unit card summoning a special card
         if (shouldSummonHorn || shouldSummonMardroeme)
         {
@@ -1373,7 +1387,7 @@ public class AbilityManager
             Transform summonContainer = isPlayer ? boardManager.PlayerSummonDeckContainer : boardManager.OpponentSummonDeckContainer;
             List<CardData> summonDeck = isPlayer ? state.playerSummonDeck : state.opponentSummonDeck;
 
-            int specialCardId = shouldSummonHorn ? -1 : -2; // horn id = -1, mardroeme id = -2
+            int specialCardId = shouldSummonHorn ? hornSpecialCardId : mardroemeSpecialCardId;
             string ability = shouldSummonHorn ? CardDefs.Ability.Horn : CardDefs.Ability.Mardroeme;
             CardData specialCardFromSummonDeck = summonDeck.FirstOrDefault(c => c.id == specialCardId);
 
@@ -1397,8 +1411,8 @@ public class AbilityManager
             // Remove special card if no matching unit remains
             int specialId = specialContainer.First().id;
 
-            bool shouldRemoveHorn = specialId == -1 && !isHornUnitOnRow;
-            bool shouldRemoveMardroeme = specialId == -2 && !isMardroemeUnitOnRow;
+            bool shouldRemoveHorn = specialId == hornSpecialCardId && !isHornUnitOnRow;
+            bool shouldRemoveMardroeme = specialId == mardroemeSpecialCardId && !isMardroemeUnitOnRow;
 
             if (shouldRemoveHorn || shouldRemoveMardroeme)
                 zoneManager.MoveRowToGraveyard(specialContainer, isPlayer);

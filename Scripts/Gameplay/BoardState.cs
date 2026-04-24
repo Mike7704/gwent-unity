@@ -46,6 +46,10 @@ public class BoardState
     public List<CardData> playerHand = new();
     public List<CardData> opponentHand = new();
 
+    // Player and Opponent graveyard preview cards
+    public CardData playerGraveyardPreviewCard = new();
+    public CardData opponentGraveyardPreviewCard = new();
+
     // Player and Opponent graveyards
     public List<CardData> playerGraveyard = new();
     public List<CardData> opponentGraveyard = new();

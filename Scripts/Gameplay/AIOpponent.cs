@@ -1,11 +1,7 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
-using UnityEditor.VersionControl;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 /// <summary>
 /// Handles opponent logic for choosing and playing cards.
@@ -70,7 +66,7 @@ public class AIOpponent
 
         // Check ability options
         ChooseAgile();
-        ChooseClearWeatherAbiltiy();
+        ChooseClearWeatherAbility();
         ChooseWeatherAbility();
         ChooseDecoy();
         ChooseSpy();
@@ -488,7 +484,7 @@ public class AIOpponent
     /// <summary>
     /// Check if a Clear Weather card should be played.
     /// </summary>
-    private void ChooseClearWeatherAbiltiy()
+    private void ChooseClearWeatherAbility()
     {
         CardData clearWeatherCard = GetRandomCard(GetCardsWithAbility(npcHand, CardDefs.Ability.Clear));
 

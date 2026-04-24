@@ -17,8 +17,8 @@ public class BoardManager : Singleton<BoardManager>
     [Header("Containers")]
     public Transform PlayerMeleeSpecialContainer, PlayerRangedSpecialContainer, PlayerSiegeSpecialContainer;
     public Transform OpponentMeleeSpecialContainer, OpponentRangedSpecialContainer, OpponentSiegeSpecialContainer;
-    public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerSummonDeckContainer, PlayerDeckContainer, PlayerGraveyardContainer;
-    public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer;
+    public Transform PlayerLeaderContainer, PlayerRecentCardContainer, PlayerSummonDeckContainer, PlayerDeckContainer, PlayerGraveyardContainer, PlayerGraveyardPreviewContainer;
+    public Transform OpponentLeaderContainer, OpponentRecentCardContainer, OpponentSummonDeckContainer, OpponentDeckContainer, OpponentGraveyardContainer, OpponentGraveyardPreviewContainer;
     public Transform WeatherCardsContainer;
 
     [Header("Row Click Zones")]
@@ -607,6 +607,12 @@ public class BoardManager : Singleton<BoardManager>
     {
         List<CardData> deck = isPlayer ? state.playerDeck : state.opponentDeck;
 
+        if (deck.Count == 0)
+            return;
+
+        if ((isPlayer && !state.playerHand.Contains(cardToRedraw)) || (!isPlayer && !state.opponentHand.Contains(cardToRedraw)))
+            return;
+
         if (state.PlayerCardsRedrawn >= 2)
             return;
 
@@ -694,7 +700,17 @@ public class BoardManager : Singleton<BoardManager>
 
         CardData card = cardUI.cardData;
 
-        if (state.CurrentPhase == GamePhase.RedrawHand)
+        if (state.playerGraveyardPreviewCard == card)
+        {
+            // Display player graveyard container
+            DisplayGraveyardContainer(isPlayer: true);
+        }
+        else if (state.opponentGraveyardPreviewCard == card)
+        {
+            // Display opponent graveyard container
+            DisplayGraveyardContainer(isPlayer: false);
+        }
+        else if (state.CurrentPhase == GamePhase.RedrawHand)
         {
             // Redraw phase, handle redraw selection
             HandleRedrawSelection(card, isPlayer: true);
@@ -752,6 +768,7 @@ public class BoardManager : Singleton<BoardManager>
         PlayerSiegeRowZoneButton.onClick.AddListener(() => HandleRowClicked(RowZone.PlayerSiegeRow));
 
         DisableAllRowZoneButtons();
+        HideGraveyardContainers();
     }
 
     /// <summary>
@@ -801,7 +818,7 @@ public class BoardManager : Singleton<BoardManager>
                 break;
         }
 
-        boardUI.ShowRowHightlight(row, enable);
+        boardUI.ShowRowHighlight(row, enable);
     }
     public void DisableAllRowZoneButtons()
     {
@@ -814,6 +831,42 @@ public class BoardManager : Singleton<BoardManager>
         PlayerSiegeRowZoneButton.gameObject.SetActive(false);
 
         boardUI.HideAllRowHighlights();
+    }
+
+    /// <summary>
+    /// Displays the graveyard container for the player or opponent.
+    /// </summary>
+    /// <param name="isPlayer"></param>
+    public void DisplayGraveyardContainer(bool isPlayer)
+    {
+        if (!PlayerGraveyardContainer.gameObject.activeSelf && !OpponentGraveyardContainer.gameObject.activeSelf)
+        {
+            if (isPlayer)
+            {
+                PlayerGraveyardContainer.gameObject.SetActive(true);
+            }
+            else
+            {
+                OpponentGraveyardContainer.gameObject.SetActive(true);
+            }
+        }
+        else
+        {
+            HideGraveyardContainers();
+        }
+    }
+
+    /// <summary>
+    /// Hides the player and opponent graveyard containers.
+    /// </summary>
+    public void HideGraveyardContainers()
+    {
+        // If player has used a medic, they must choose a card
+        if (!abilityManager.isMedicActive)
+        {
+            PlayerGraveyardContainer.gameObject.SetActive(false);
+        }
+        OpponentGraveyardContainer.gameObject.SetActive(false);
     }
 
     // -------------------------

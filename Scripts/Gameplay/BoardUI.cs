@@ -105,7 +105,7 @@ public class BoardUI : MonoBehaviour
         OpponentTotalScore.text = opponentScore.ToString();
 
         // -------------------------
-        // Winnding indicator
+        // Winning indicator
         // -------------------------
         PlayerWinningIndicator.enabled = playerScore > opponentScore;
         OpponentWinningIndicator.enabled = opponentScore > playerScore;
@@ -146,7 +146,7 @@ public class BoardUI : MonoBehaviour
     /// <summary>
     /// Shows or hides row highlight for a given row.
     /// </summary>
-    public void ShowRowHightlight(RowZone row, bool show)
+    public void ShowRowHighlight(RowZone row, bool show)
     {
         switch (row)
         {
