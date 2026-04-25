@@ -241,6 +241,8 @@ public class AbilityManager
         boardManager.EnableRowZoneButton(RowZone.PlayerRangedRow, true);
         boardManager.EnableRowZoneButton(RowZone.PlayerSiegeRow, false); // Just to be safe
 
+        boardManager.HideGraveyardContainers();
+
         Debug.Log("[AbilityManager] Waiting for row selection...");
     }
     public void HandleAgileSelection(RowZone row,  bool isPlayer)

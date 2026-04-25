@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
+using System.Linq;
 
 /// <summary>
 /// Controls gameplay setup and flow.
@@ -841,13 +842,17 @@ public class BoardManager : Singleton<BoardManager>
     {
         if (!PlayerGraveyardContainer.gameObject.activeSelf && !OpponentGraveyardContainer.gameObject.activeSelf)
         {
-            if (isPlayer)
+            if (isPlayer && state.playerGraveyard.Any())
             {
                 PlayerGraveyardContainer.gameObject.SetActive(true);
             }
-            else
+            else if (state.opponentGraveyard.Any())
             {
                 OpponentGraveyardContainer.gameObject.SetActive(true);
+            }
+            else
+            {
+                HideGraveyardContainers();
             }
         }
         else
@@ -862,7 +867,7 @@ public class BoardManager : Singleton<BoardManager>
     public void HideGraveyardContainers()
     {
         // If player has used a medic, they must choose a card
-        if (!abilityManager.isMedicActive)
+        if (!abilityManager.isMedicActive || abilityManager.isAgileActive)
         {
             PlayerGraveyardContainer.gameObject.SetActive(false);
         }

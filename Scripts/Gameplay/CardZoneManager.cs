@@ -40,6 +40,8 @@ public class CardZoneManager
 
         PlayCardSFX(card, toZone);
         UpdateZoneUI(toZone);
+        UpdateGraveyardCardPreview(isPlayer: true);
+        UpdateGraveyardCardPreview(isPlayer: false);
         RefreshRowLayouts();
     }
 
@@ -313,7 +315,6 @@ public class CardZoneManager
         }
         else if (card.type == CardDefs.Type.Standard)
         {
-            UpdateGraveyardCardPreview(card, isPlayer);
             MoveCard(card, fromZone, graveyard);
             Debug.Log($"[CardZoneManager] {(isPlayer ? "Player" : "Opponent")} sent [{card.name}] to graveyard");
         }
@@ -374,18 +375,45 @@ public class CardZoneManager
     }
 
     /// <summary>
-    /// Displays the recent card added to the graveyard for player or opponent.
+    /// Displays the highest card in the graveyard for player and opponent.
     /// </summary>
-    /// <param name="cardRemoved"></param>
     /// <param name="isPlayer"></param>
-    private void UpdateGraveyardCardPreview(CardData cardRemoved, bool isPlayer)
+    public void UpdateGraveyardCardPreview(bool isPlayer)
     {
         // Decide where to place the card and which UI reference to update
-        Transform graveyardCardContainer = isPlayer ? boardManager.PlayerGraveyardPreviewContainer : boardManager.OpponentGraveyardPreviewContainer;
-        CardData currentCard = isPlayer ? state.playerGraveyardPreviewCard : state.opponentGraveyardPreviewCard;
+        Transform graveyardPreviewContainer = isPlayer ? boardManager.PlayerGraveyardPreviewContainer : boardManager.OpponentGraveyardPreviewContainer;
+        List<CardData> graveyard = isPlayer ? state.playerGraveyard : state.opponentGraveyard;
+        CardData currentPreviewCard = isPlayer ? state.playerGraveyardPreviewCard : state.opponentGraveyardPreviewCard;
+
+        if (graveyard == null || graveyard.Count == 0)
+        {
+            if (currentPreviewCard != null && cardUIMap.TryGetValue(currentPreviewCard, out var oldUI))
+            {
+                if (oldUI != null)
+                    CardManager.Instance.ReturnCard(oldUI);
+
+                cardUIMap.Remove(currentPreviewCard);
+            }
+
+            if (isPlayer)
+                state.playerGraveyardPreviewCard = null;
+            else
+                state.opponentGraveyardPreviewCard = null;
+
+            return;
+        }
+
+        CardData highestCard = graveyard[0];
+
+        if (highestCard == null)
+            return;
+
+        // If the highest card is already being previewed, do nothing
+        if (currentPreviewCard != null && currentPreviewCard.id == highestCard.id)
+            return;
 
         // Destroy the old card
-        if (cardUIMap.TryGetValue(currentCard, out var cardUI))
+        if (currentPreviewCard != null && cardUIMap.TryGetValue(currentPreviewCard, out var cardUI))
         {
             if (cardUI != null)
             {
@@ -393,17 +421,17 @@ public class CardZoneManager
                 cardUI.gameObject.SetActive(false);
                 UnityEngine.Object.Destroy(cardUI.gameObject);
             }
-            cardUIMap.Remove(currentCard);
+            cardUIMap.Remove(currentPreviewCard);
         }
 
         // Create a clone of the card data to be displayed
-        CardData newCard = cardRemoved.Clone();
+        CardData newCard = highestCard.Clone();
         if (isPlayer)
             state.playerGraveyardPreviewCard = newCard;
         else
             state.opponentGraveyardPreviewCard = newCard;
 
-        boardManager.CreateAndRegisterCard(newCard, graveyardCardContainer, visible: true);
+        boardManager.CreateAndRegisterCard(newCard, graveyardPreviewContainer, visible: true);
     }
 
     /// <summary>
