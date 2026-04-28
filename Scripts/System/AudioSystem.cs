@@ -114,6 +114,38 @@ public class AudioSystem : Singleton<AudioSystem>
         PlayMusic(playlist[currentIndex]);
     }
 
+    public void SkipMusicForward(float seconds)
+    {
+        if (musicSource.clip == null) return;
+
+        float newTime = musicSource.time + seconds;
+
+        if (newTime >= musicSource.clip.length)
+        {
+            NextTrack();
+        }
+        else
+        {
+            musicSource.time = newTime;
+        }
+    }
+
+    public void SkipMusicBackward(float seconds)
+    {
+        if (musicSource.clip == null) return;
+
+        float newTime = musicSource.time - seconds;
+
+        if (newTime <= 0f)
+        {
+            PreviousTrack();
+        }
+        else
+        {
+            musicSource.time = newTime;
+        }
+    }
+
     public void ToggleShuffle()
     {
         shuffle = !shuffle;

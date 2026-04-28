@@ -1,6 +1,7 @@
-using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// Manages the music control UI.
@@ -22,12 +23,13 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
     public Sprite shuffleOnIcon;
 
     private bool isPlaying = true;
+    private const float SkipSeconds = 10f;
 
     void Start()
     {
         playPauseButton.onClick.AddListener(TogglePlayPause);
-        previousButton.onClick.AddListener(PreviousTrack);
-        nextButton.onClick.AddListener(NextTrack);
+        SetupMouseClick(previousButton, PreviousTrack, SkipBackward);
+        SetupMouseClick(nextButton, NextTrack, SkipForward);
         shuffleButton.onClick.AddListener(ToggleShuffle);
 
         // Initialise buttons
@@ -37,6 +39,22 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
 
         // Subscribe to track change event
         AudioSystem.Instance.TrackChanged += OnTrackChanged;
+    }
+
+    private void SetupMouseClick(Button button, UnityEngine.Events.UnityAction left, UnityEngine.Events.UnityAction right)
+    {
+        // Remove default button click
+        button.onClick.RemoveAllListeners();
+
+        MouseClickInput input = button.GetComponent<MouseClickInput>();
+        if (input == null)
+            input = button.gameObject.AddComponent<MouseClickInput>();
+
+        input.leftClick.RemoveAllListeners();
+        input.rightClick.RemoveAllListeners();
+
+        input.leftClick.AddListener(left);
+        input.rightClick.AddListener(right);
     }
 
     private void TogglePlayPause()
@@ -63,6 +81,16 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
     private void NextTrack()
     {
         AudioSystem.Instance.NextTrack();
+    }
+
+    private void SkipForward()
+    {
+        AudioSystem.Instance.SkipMusicForward(SkipSeconds);
+    }
+
+    private void SkipBackward()
+    {
+        AudioSystem.Instance.SkipMusicBackward(SkipSeconds);
     }
 
     private void ToggleShuffle()
