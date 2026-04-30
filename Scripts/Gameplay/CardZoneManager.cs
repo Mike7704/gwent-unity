@@ -387,11 +387,14 @@ public class CardZoneManager
 
         if (graveyard == null || graveyard.Count == 0)
         {
-            if (currentPreviewCard != null && cardUIMap.TryGetValue(currentPreviewCard, out var oldUI))
+            if (currentPreviewCard != null && cardUIMap.TryGetValue(currentPreviewCard, out var cardUI))
             {
-                if (oldUI != null)
-                    CardManager.Instance.ReturnCard(oldUI);
-
+                if (cardUI != null)
+                {
+                    cardUI.transform.SetParent(null);
+                    cardUI.gameObject.SetActive(false);
+                    UnityEngine.Object.Destroy(cardUI.gameObject);
+                }
                 cardUIMap.Remove(currentPreviewCard);
             }
 
@@ -411,18 +414,6 @@ public class CardZoneManager
         // If the highest card is already being previewed, do nothing
         if (currentPreviewCard != null && currentPreviewCard.id == highestCard.id)
             return;
-
-        // Destroy the old card
-        if (currentPreviewCard != null && cardUIMap.TryGetValue(currentPreviewCard, out var cardUI))
-        {
-            if (cardUI != null)
-            {
-                cardUI.transform.SetParent(null);
-                cardUI.gameObject.SetActive(false);
-                UnityEngine.Object.Destroy(cardUI.gameObject);
-            }
-            cardUIMap.Remove(currentPreviewCard);
-        }
 
         // Create a clone of the card data to be displayed
         CardData newCard = highestCard.Clone();

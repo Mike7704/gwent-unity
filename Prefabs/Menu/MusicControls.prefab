@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8152582532085130910}
   - component: {fileID: 3027030435382179372}
   - component: {fileID: 7639672012758780080}
+  - component: {fileID: 2413359506890222574}
   m_Layer: 0
   m_Name: MusicControls
   m_TagString: Untagged
@@ -62,6 +63,11 @@ MonoBehaviour:
   pauseIcon: {fileID: 21300000, guid: 7b94d2c8fbabe964a9e58fb465bf1f31, type: 3}
   shuffleOffIcon: {fileID: 21300000, guid: 87c5dc5fb8658d54f985eeaa4e0cb940, type: 3}
   shuffleOnIcon: {fileID: 21300000, guid: 7177113fa8a654e4cbdacc52ffeac901, type: 3}
+  controlsCanvasGroup: {fileID: 2413359506890222574}
+  visibleOpacity: 1
+  fadedOpacity: 0.2
+  fadeDelay: 1.5
+  fadeDuration: 0.3
 --- !u!95 &7639672012758780080
 Animator:
   serializedVersion: 7
@@ -84,6 +90,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!225 &2413359506890222574
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 476474007806635442}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &779309493578615338
 GameObject:
   m_ObjectHideFlags: 0

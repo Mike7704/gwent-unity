@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,6 +23,16 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
     public Sprite shuffleOffIcon;
     public Sprite shuffleOnIcon;
 
+    [Header("Fade")]
+    public CanvasGroup controlsCanvasGroup;
+    public float visibleOpacity = 1f;
+    public float fadedOpacity = 0.2f;
+    public float fadeDelay = 1.5f;
+    public float fadeDuration = 0.3f;
+
+    private Coroutine fadeCoroutine;
+    private bool isHoveringControls;
+
     private bool isPlaying = true;
     private const float SkipSeconds = 10f;
 
@@ -36,6 +47,8 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
         UpdatePlayPauseIcon();
         UpdateShuffleIcon();
         SetupMusicVolumeSlider();
+
+        SetupHoverEvents();
 
         // Subscribe to track change event
         AudioSystem.Instance.TrackChanged += OnTrackChanged;
@@ -131,5 +144,87 @@ public class MusicControlsUI : Singleton<MusicControlsUI>
     {
         if (shuffleButton.image != null)
             shuffleButton.image.sprite = AudioSystem.Instance.shuffle ? shuffleOnIcon : shuffleOffIcon;
+    }
+
+    // -------------------------
+    // Hover events to fade controls
+    // -------------------------
+
+    private void SetupHoverEvents()
+    {
+        AddHoverTrigger(playPauseButton.gameObject);
+        AddHoverTrigger(previousButton.gameObject);
+        AddHoverTrigger(nextButton.gameObject);
+        AddHoverTrigger(shuffleButton.gameObject);
+        AddHoverTrigger(volumeSlider.gameObject);
+
+        fadeCoroutine = StartCoroutine(FadeOutAfterDelay());
+    }
+
+    private void AddHoverTrigger(GameObject target)
+    {
+        EventTrigger trigger = target.GetComponent<EventTrigger>();
+        if (trigger == null)
+            trigger = target.AddComponent<EventTrigger>();
+
+        EventTrigger.Entry enterEntry = new EventTrigger.Entry
+        {
+            eventID = EventTriggerType.PointerEnter
+        };
+        enterEntry.callback.AddListener(_ => OnControlsHoverEnter());
+        trigger.triggers.Add(enterEntry);
+
+        EventTrigger.Entry exitEntry = new EventTrigger.Entry
+        {
+            eventID = EventTriggerType.PointerExit
+        };
+        exitEntry.callback.AddListener(_ => OnControlsHoverExit());
+        trigger.triggers.Add(exitEntry);
+    }
+
+    private void OnControlsHoverEnter()
+    {
+        isHoveringControls = true;
+
+        if (fadeCoroutine != null)
+            StopCoroutine(fadeCoroutine);
+
+        fadeCoroutine = StartCoroutine(FadeControls(visibleOpacity));
+    }
+
+    private void OnControlsHoverExit()
+    {
+        isHoveringControls = false;
+
+        if (fadeCoroutine != null)
+            StopCoroutine(fadeCoroutine);
+
+        fadeCoroutine = StartCoroutine(FadeOutAfterDelay());
+    }
+
+    private IEnumerator FadeOutAfterDelay()
+    {
+        yield return new WaitForSeconds(fadeDelay);
+
+        if (!isHoveringControls)
+            yield return FadeControls(fadedOpacity);
+    }
+
+    private IEnumerator FadeControls(float targetOpacity)
+    {
+        if (controlsCanvasGroup == null)
+            yield break;
+
+        float startOpacity = controlsCanvasGroup.alpha;
+        float elapsed = 0f;
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            controlsCanvasGroup.alpha = Mathf.Lerp(startOpacity, targetOpacity, elapsed / fadeDuration);
+            yield return null;
+        }
+
+        controlsCanvasGroup.alpha = targetOpacity;
     }
 }
